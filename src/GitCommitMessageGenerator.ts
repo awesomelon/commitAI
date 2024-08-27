@@ -94,48 +94,4 @@ class GitCommitMessageGenerator {
   }
 }
 
-async function main() {
-  try {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      throw new Error("ANTHROPIC_API_KEY environment variable is not set");
-    }
-
-    const generator = new GitCommitMessageGenerator(apiKey, {
-      maxTokens: 150,
-      temperature: 0.2,
-      commitMessageFormat: "conventional",
-    });
-
-    const commitMessages = await generator.generateCommitMessages();
-    console.log("Generated commit message:", commitMessages);
-
-    console.log("Generated commit messages:");
-    commitMessages.forEach((msg, index) => {
-      console.log(`${index + 1}. ${msg}`);
-    });
-
-    const userChoice = await generator.promptUser(
-      "Enter the number of the commit message you want to use (or 0 to cancel): ",
-    );
-
-    const choiceNum = parseInt(userChoice);
-    if (choiceNum > 0 && choiceNum <= commitMessages.length) {
-      await generator.commitChanges(commitMessages[choiceNum - 1]);
-    } else if (choiceNum === 0) {
-      console.log("Commit cancelled by user.");
-    } else {
-      console.log("Invalid choice. Commit cancelled.");
-    }
-  } catch (error) {
-    console.error("Error:", (error as Error).message);
-    process.exit(1);
-  }
-}
-
-// ES 모듈에서는 이렇게 main 모듈 체크를 합니다
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
-}
-
 export default GitCommitMessageGenerator;
