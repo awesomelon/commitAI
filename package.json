@@ -1,0 +1,33 @@
+{
+  "name": "@j-ho/autocommit",
+  "version": "1.0.0",
+  "description": "Automatically generate commit messages using AI",
+  "type": "module",
+  "main": "dist/index.js",
+  "exports": "./dist/cli.js",
+  "bin": {
+      "autocommit": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "test": "jest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": ["git", "commit", "claude", "cli"],
+  "author": "j-ho",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/configstore": "^6.0.2",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^22.5.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.27.0",
+    "commander": "^12.1.0",
+    "configstore": "^7.0.0"
+  }
+}
