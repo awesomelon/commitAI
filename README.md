@@ -9,6 +9,7 @@ commit-ai is a CLI tool that automatically generates Git commit messages using A
 - Easy-to-use CLI interface
 - Interactive commit message selection using arrow keys
 - Visual progress indication for commit message generation and commit process
+- Intelligent file filtering to exclude large files and specific file types (e.g., lock files)
 
 ## Installation
 
@@ -39,18 +40,19 @@ commit-ai
 - `-t, --temperature <number>`: Set temperature for message generation (default: 0.7)
 - `-f, --format <format>`: Set commit message format (conventional or freeform, default: conventional)
 - `-n, --number <number>`: Number of commit message suggestions to generate (default: 3)
+- `--max-file-size <number>`: Maximum file size in KB to include in diff (default: 100)
 
 Example:
 
 ```
-commit-ai -n 5 -m 400 -t 0.8 -f freeform
+commit-ai -n 5 -m 400 -t 0.8 -f freeform --max-file-size 200
 ```
 
-This command generates 5 freeform commit message suggestions, using a maximum of 400 tokens and a temperature of 0.8.
+This command generates 5 freeform commit message suggestions, using a maximum of 400 tokens, a temperature of 0.8, and includes files up to 200KB in size.
 
 ## How It Works
 
-1. Analyzes staged changes in the current Git repository
+1. Analyzes staged changes in the current Git repository, filtering out large files and specific file types
 2. Uses AI to generate multiple commit message candidates (with visual progress indication)
 3. Displays the list of generated messages
 4. Allows the user to select a message using arrow keys or cancel the commit

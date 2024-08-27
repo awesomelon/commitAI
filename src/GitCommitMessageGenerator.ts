@@ -7,6 +7,7 @@ interface GeneratorOptions {
   model?: string;
   commitMessageFormat?: "conventional" | "freeform";
   numberOfSuggestions?: number;
+  maxFileSizeKB?: number;
 }
 
 class GitCommitMessageGenerator {
@@ -21,6 +22,7 @@ class GitCommitMessageGenerator {
       model: options.model || "claude-3-5-sonnet-20240620",
       commitMessageFormat: options.commitMessageFormat || "conventional",
       numberOfSuggestions: options.numberOfSuggestions || 3,
+      maxFileSizeKB: options.maxFileSizeKB || 100, // Default to 100KB
     };
   }
 
@@ -32,10 +34,48 @@ class GitCommitMessageGenerator {
 
   private getGitDiff(): string {
     try {
-      return execSync("git diff --cached").toString();
+      const stagedFiles = execSync("git diff --cached --name-only")
+        .toString()
+        .split("\n")
+        .filter(Boolean);
+
+      let filteredDiff = "";
+
+      for (const file of stagedFiles) {
+        if (this.shouldSkipFile(file)) continue;
+
+        const fileDiff = execSync(`git diff --cached -- "${file}"`).toString();
+
+        if (
+          Buffer.byteLength(fileDiff, "utf8") / 1024 >
+          this.options.maxFileSizeKB
+        ) {
+          console.warn(
+            `Skipping file ${file} as it exceeds the maximum file size limit of ${this.options.maxFileSizeKB}KB`,
+          );
+          continue;
+        }
+
+        filteredDiff += fileDiff;
+      }
+
+      return filteredDiff;
     } catch (error) {
       throw new Error("Failed to get Git diff: " + (error as Error).message);
     }
+  }
+
+  private shouldSkipFile(filename: string): boolean {
+    // Skip lock files and other patterns as needed
+    const skipPatterns = [
+      /package-lock\.json$/,
+      /yarn\.lock$/,
+      /pnpm-lock\.yaml$/,
+      /\.svg$/,
+      /\.map$/,
+    ];
+
+    return skipPatterns.some((pattern) => pattern.test(filename));
   }
 
   private async callClaudeAPI(diff: string): Promise<any> {
