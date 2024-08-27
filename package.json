@@ -12,7 +12,10 @@
     "build": "node build.js",
     "start": "node dist/cli.js",
     "test": "jest",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "publish:patch": "npm version patch && npm publish",
+    "publish:minor": "npm version minor && npm publish",
+    "publish:major": "npm version major && npm publish"
   },
   "keywords": [
     "git",
@@ -20,6 +23,7 @@
     "claude",
     "cli"
   ],
+  "repository": "https://github.com/awesomelon/autocommit",
   "author": "j-ho",
   "license": "MIT",
   "devDependencies": {

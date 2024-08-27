@@ -27,7 +27,7 @@ commitgpt --key YOUR_API_KEY
 커밋 메시지를 생성하려면 다음과 같이 실행하세요:
 
 ```
-commitgpt
+autocommit
 ```
 
 ### 옵션
