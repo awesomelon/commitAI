@@ -29,6 +29,11 @@ program
     "conventional",
   )
   .option("-n, --number <number>", "Number of commit message suggestions", "3")
+  .option(
+    "--max-file-size <number>",
+    "Maximum file size in KB to include in diff",
+    "100",
+  )
   .action(async (options) => {
     if (options.key) {
       config.set("apiKey", options.key);
@@ -47,6 +52,7 @@ program
       temperature: parseFloat(options.temperature),
       commitMessageFormat: options.format as "conventional" | "freeform",
       numberOfSuggestions: parseInt(options.number),
+      maxFileSizeKB: parseInt(options.maxFileSize),
     });
 
     try {
