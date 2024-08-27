@@ -46,12 +46,10 @@ class GitCommitMessageGenerator {
 
         const fileDiff = execSync(`git diff --cached -- "${file}"`).toString();
 
-        if (
-          Buffer.byteLength(fileDiff, "utf8") / 1024 >
-          this.options.maxFileSizeKB
-        ) {
+        const fileSizeKB = Buffer.byteLength(fileDiff, "utf8") / 1024;
+        if (fileSizeKB > this.options.maxFileSizeKB) {
           console.warn(
-            `Skipping file ${file} as it exceeds the maximum file size limit of ${this.options.maxFileSizeKB}KB`,
+            `Skipping large file: ${file} (${fileSizeKB.toFixed(2)} KB)`,
           );
           continue;
         }
