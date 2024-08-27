@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-
 import { program } from "commander";
 import Configstore from "configstore";
 import { select } from "@inquirer/prompts";
+import ora from "ora";
 import GitCommitMessageGenerator from "./GitCommitMessageGenerator.js";
 
 const VERSION = "__VERSION__";
@@ -50,7 +50,9 @@ program
     });
 
     try {
+      const spinner = ora("Generating commit messages...").start();
       const commitMessages = await generator.generateCommitMessages();
+      spinner.succeed("Commit messages generated successfully.");
 
       const answer = await select({
         message: "Select a commit message to use",
@@ -64,7 +66,9 @@ program
       });
 
       if (answer) {
+        spinner.start("Committing changes...");
         await generator.commitChanges(answer);
+        spinner.succeed("Changes Committed successfully!");
       } else {
         console.log("Commit cancelled by user.");
       }
