@@ -92,15 +92,6 @@ class GitCommitMessageGenerator {
       throw new Error("Failed to commit changes: " + (error as Error).message);
     }
   }
-
-  async editMessage(message: string): Promise<string> {
-    console.log(`\nCurrent commit message:`);
-    console.log(message);
-    const editedMessage = await this.promptUser(
-      "\nEnter your edited commit message (or press Enter to keep as is):\n",
-    );
-    return editedMessage.trim() || message;
-  }
 }
 
 async function main() {

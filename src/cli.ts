@@ -52,11 +52,6 @@ program
     try {
       const commitMessages = await generator.generateCommitMessages();
 
-      console.log("Generated commit messages:");
-      commitMessages.forEach((msg, index) => {
-        console.log(`${index + 1}. ${msg}`);
-      });
-
       const answer = await select({
         message: "Select a commit message to use",
         choices: [
@@ -70,7 +65,6 @@ program
 
       if (answer) {
         await generator.commitChanges(answer);
-        console.log("Commit successful!");
       } else {
         console.log("Commit cancelled by user.");
       }
