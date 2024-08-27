@@ -1,6 +1,5 @@
 import { execSync } from "child_process";
 import { Anthropic, ClientOptions } from "@anthropic-ai/sdk";
-import * as readline from "readline";
 
 interface GeneratorOptions {
   maxTokens?: number;
@@ -60,20 +59,6 @@ class GitCommitMessageGenerator {
   parseCommitMessages(response: string): string[] {
     const messages = response.split(/\d+\.\s/).slice(1);
     return messages.map((msg) => msg.trim());
-  }
-
-  async promptUser(message: string): Promise<string> {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    return new Promise((resolve) => {
-      rl.question(message, (answer) => {
-        rl.close();
-        resolve(answer);
-      });
-    });
   }
 
   async commitChanges(message: string): Promise<void> {
