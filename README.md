@@ -7,7 +7,7 @@ AutoCommit is a CLI tool that automatically generates commit messages using AI.
 Install the package globally using npm:
 
 ```
-npm install -g autocommit
+npm install -g @j-ho/autocommit
 ```
 
 ## Usage

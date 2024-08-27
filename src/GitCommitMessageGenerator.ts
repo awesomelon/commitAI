@@ -7,6 +7,7 @@ interface GeneratorOptions {
     temperature?: number;
     model?: string;
     commitMessageFormat?: 'conventional' | 'freeform';
+    numberOfSuggestions?: number
 }
 
 class GitCommitMessageGenerator {
@@ -20,13 +21,14 @@ class GitCommitMessageGenerator {
             temperature: options.temperature || 0,
             model: options.model || "claude-3-5-sonnet-20240620",
             commitMessageFormat: options.commitMessageFormat || 'conventional',
+            numberOfSuggestions: options.numberOfSuggestions || 3
         };
     }
 
-    async generateCommitMessage(): Promise<string> {
+    async generateCommitMessages(): Promise<string[]> {
         const diff = this.getGitDiff();
         const response = await this.callClaudeAPI(diff);
-        return response.content[0].text.trim();
+        return this.parseCommitMessages(response.content[0].text);
     }
 
     private getGitDiff(): string {
@@ -45,12 +47,8 @@ class GitCommitMessageGenerator {
                 temperature: this.options.temperature,
                 messages: [
                     {
-                        role: "assistant",
-                        content: `You are an AI assistant that generates concise and informative Git commit messages based on the provided diff. Use the ${this.options.commitMessageFormat} commit message format.`
-                    },
-                    {
                         role: "user",
-                        content: `Generate a commit message for the following Git diff:\n\n${diff}`
+                        content: `Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff:\n\n${diff}`
                     }
                 ]
             });
@@ -58,6 +56,12 @@ class GitCommitMessageGenerator {
             throw new Error('Failed to call Claude API: ' + (error as Error).message);
         }
     }
+
+    parseCommitMessages(response: string): string[] {
+        const messages = response.split(/\d+\.\s/).slice(1);
+        return messages.map(msg => msg.trim());
+    }
+
 
     async promptUser(message: string): Promise<string> {
         const rl = readline.createInterface({
@@ -81,6 +85,13 @@ class GitCommitMessageGenerator {
             throw new Error('Failed to commit changes: ' + (error as Error).message);
         }
     }
+
+    async editMessage(message: string): Promise<string> {
+        console.log(`\nCurrent commit message:`);
+        console.log(message);
+        const editedMessage = await this.promptUser('\nEnter your edited commit message (or press Enter to keep as is):\n');
+        return editedMessage.trim() || message;
+    }
 }
 
 async function main() {
@@ -96,15 +107,23 @@ async function main() {
             commitMessageFormat: 'conventional'
         });
 
-        const commitMessage = await generator.generateCommitMessage();
-        console.log('Generated commit message:', commitMessage);
+        const commitMessages = await generator.generateCommitMessages();
+        console.log('Generated commit message:', commitMessages);
 
-        const userConfirmation = await generator.promptUser('Do you want to use this commit message? (yes/no): ');
+        console.log('Generated commit messages:');
+        commitMessages.forEach((msg, index) => {
+            console.log(`${index + 1}. ${msg}`);
+        });
 
-        if (userConfirmation.toLowerCase() === 'yes') {
-            await generator.commitChanges(commitMessage);
-        } else {
+        const userChoice = await generator.promptUser('Enter the number of the commit message you want to use (or 0 to cancel): ');
+
+        const choiceNum = parseInt(userChoice);
+        if (choiceNum > 0 && choiceNum <= commitMessages.length) {
+            await generator.commitChanges(commitMessages[choiceNum - 1]);
+        } else if (choiceNum === 0) {
             console.log('Commit cancelled by user.');
+        } else {
+            console.log('Invalid choice. Commit cancelled.');
         }
     } catch (error) {
         console.error('Error:', (error as Error).message);

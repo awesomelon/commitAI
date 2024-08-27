@@ -10,9 +10,10 @@ program
     .version('1.0.0')
     .description('Automatically generate commit messages using AI')
     .option('-k, --key <key>', 'Set Anthropic API key')
-    .option('-m, --max-tokens <number>', 'Set max tokens for message generation', '100')
-    .option('-t, --temperature <number>', 'Set temperature for message generation', '0')
+    .option('-m, --max-tokens <number>', 'Set max tokens for message generation', '300')
+    .option('-t, --temperature <number>', 'Set temperature for message generation', '0.7')
     .option('-f, --format <format>', 'Set commit message format (conventional or freeform)', 'conventional')
+    .option('-n, --number <number>', 'Number of commit message suggestions', '3')
     .action(async (options) => {
         if (options.key) {
             config.set('apiKey', options.key);
@@ -29,19 +30,27 @@ program
         const generator = new GitCommitMessageGenerator(apiKey, {
             maxTokens: parseInt(options.maxTokens),
             temperature: parseFloat(options.temperature),
-            commitMessageFormat: options.format as 'conventional' | 'freeform'
+            commitMessageFormat: options.format as 'conventional' | 'freeform',
+            numberOfSuggestions: parseInt(options.number)
         });
 
         try {
-            const commitMessage = await generator.generateCommitMessage();
-            console.log('Generated commit message:', commitMessage);
+            const commitMessages = await generator.generateCommitMessages();
 
-            const userConfirmation = await generator.promptUser('Do you want to use this commit message? (yes/no): ');
+            console.log('Generated commit messages:');
+            commitMessages.forEach((msg, index) => {
+                console.log(`${index + 1}. ${msg}`);
+            });
 
-            if (userConfirmation.toLowerCase() === 'yes') {
-                await generator.commitChanges(commitMessage);
-            } else {
+            const userChoice = await generator.promptUser('Enter the number of the commit message you want to use (or 0 to cancel): ');
+
+            const choiceNum = parseInt(userChoice);
+            if (choiceNum > 0 && choiceNum <= commitMessages.length) {
+                await generator.commitChanges(commitMessages[choiceNum - 1]);
+            } else if (choiceNum === 0) {
                 console.log('Commit cancelled by user.');
+            } else {
+                console.log('Invalid choice. Commit cancelled.');
             }
         } catch (error) {
             console.error('Error:', (error as Error).message);
