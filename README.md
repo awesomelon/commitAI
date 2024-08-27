@@ -1,6 +1,6 @@
-# autocommit
+# commit-ai
 
-autocommit은 AI를 사용하여 자동으로 Git 커밋 메시지를 생성하는 CLI 도구입니다.
+commit-ai는 AI를 사용하여 자동으로 Git 커밋 메시지를 생성하는 CLI 도구입니다.
 
 ## 특징
 
@@ -13,21 +13,21 @@ autocommit은 AI를 사용하여 자동으로 Git 커밋 메시지를 생성하�
 npm을 사용하여 전역으로 설치할 수 있습니다:
 
 ```
-npm install -g @j-ho/autocommit
+npm install -g @j-ho/commit-ai
 ```
 
 ## 사용 방법
 
-autocommit을 사용하기 전에 Anthropic API 키를 설정해야 합니다:
+commit-ai을 사용하기 전에 Anthropic API 키를 설정해야 합니다:
 
 ```
-autocommit --key YOUR_API_KEY
+commit-ai --key YOUR_API_KEY
 ```
 
 커밋 메시지를 생성하려면 다음과 같이 실행하세요:
 
 ```
-autocommit
+commit-ai
 ```
 
 ### 옵션
@@ -41,7 +41,7 @@ autocommit
 예시:
 
 ```
-commitgpt -n 5 -m 400 -t 0.8 -f freeform
+commit-ai -n 5 -m 400 -t 0.8 -f freeform
 ```
 
 이 명령은 5개의 자유 형식 커밋 메시지를 생성하며, 최대 400 토큰을 사용하고 temperature를 0.8로 설정합니다.

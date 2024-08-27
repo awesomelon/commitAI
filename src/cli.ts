@@ -6,7 +6,7 @@ import GitCommitMessageGenerator from "./GitCommitMessageGenerator.js";
 
 const VERSION = "__VERSION__";
 
-const config = new Configstore("autocommit");
+const config = new Configstore("commit-ai");
 
 program
   .version(VERSION)

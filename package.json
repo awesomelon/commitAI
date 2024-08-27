@@ -1,12 +1,12 @@
 {
-  "name": "@j-ho/autocommit",
+  "name": "@j-ho/commit-ai",
   "version": "0.0.1",
   "description": "Automatically generate commit messages using AI",
   "type": "module",
   "main": "dist/index.js",
   "exports": "./dist/cli.js",
   "bin": {
-    "autocommit": "./dist/cli.js"
+    "commit-ai": "./dist/cli.js"
   },
   "scripts": {
     "build": "node build.js",
@@ -23,7 +23,7 @@
     "claude",
     "cli"
   ],
-  "repository": "https://github.com/awesomelon/autocommit",
+  "repository": "https://github.com/awesomelon/commitAI",
   "author": "j-ho",
   "license": "MIT",
   "devDependencies": {
