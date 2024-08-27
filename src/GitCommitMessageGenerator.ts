@@ -78,7 +78,15 @@ class GitCommitMessageGenerator {
 
   async commitChanges(message: string): Promise<void> {
     try {
-      execSync(`git commit -m "${message}"`);
+      const stagedChanges = execSync("git diff --cached --name-only")
+        .toString()
+        .trim();
+      if (!stagedChanges) {
+        throw new Error("No changes staged for commit");
+      }
+
+      const escapedMessage = message.replace(/"/g, '\\"');
+      execSync(`git commit -m "${escapedMessage}"`);
       console.log("Commit successful!");
     } catch (error) {
       throw new Error("Failed to commit changes: " + (error as Error).message);

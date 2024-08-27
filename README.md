@@ -1,6 +1,6 @@
-# Autocommit
+# autocommit
 
-CommitGPT는 AI를 사용하여 자동으로 Git 커밋 메시지를 생성하는 CLI 도구입니다.
+autocommit은 AI를 사용하여 자동으로 Git 커밋 메시지를 생성하는 CLI 도구입니다.
 
 ## 특징
 
@@ -18,10 +18,10 @@ npm install -g @j-ho/autocommit
 
 ## 사용 방법
 
-CommitGPT를 사용하기 전에 Anthropic API 키를 설정해야 합니다:
+autocommit을 사용하기 전에 Anthropic API 키를 설정해야 합니다:
 
 ```
-commitgpt --key YOUR_API_KEY
+autocommit --key YOUR_API_KEY
 ```
 
 커밋 메시지를 생성하려면 다음과 같이 실행하세요:
