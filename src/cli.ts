@@ -2,6 +2,7 @@
 
 import { program } from "commander";
 import Configstore from "configstore";
+import { select } from "@inquirer/prompts";
 import GitCommitMessageGenerator from "./GitCommitMessageGenerator.js";
 
 const VERSION = "__VERSION__";
@@ -56,17 +57,22 @@ program
         console.log(`${index + 1}. ${msg}`);
       });
 
-      const userChoice = await generator.promptUser(
-        "Enter the number of the commit message you want to use (or 0 to cancel): ",
-      );
+      const answer = await select({
+        message: "Select a commit message to use",
+        choices: [
+          ...commitMessages.map((msg, index) => ({
+            name: `${index + 1}. ${msg}`,
+            value: msg,
+          })),
+          { name: "Cancel", value: null },
+        ],
+      });
 
-      const choiceNum = parseInt(userChoice);
-      if (choiceNum > 0 && choiceNum <= commitMessages.length) {
-        await generator.commitChanges(commitMessages[choiceNum - 1]);
-      } else if (choiceNum === 0) {
-        console.log("Commit cancelled by user.");
+      if (answer) {
+        await generator.commitChanges(answer);
+        console.log("Commit successful!");
       } else {
-        console.log("Invalid choice. Commit cancelled.");
+        console.log("Commit cancelled by user.");
       }
     } catch (error) {
       console.error("Error:", (error as Error).message);

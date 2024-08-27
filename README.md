@@ -1,70 +1,70 @@
 # commit-ai
 
-commit-ai는 AI를 사용하여 자동으로 Git 커밋 메시지를 생성하는 CLI 도구입니다.
+commit-ai is a CLI tool that automatically generates Git commit messages using AI.
 
-## 특징
+## Features
 
-- AI를 활용한 다중 커밋 메시지 제안
-- 사용자 지정 가능한 메시지 생성 옵션
-- 간편한 CLI 인터페이스
+- Multiple commit message suggestions using AI
+- Customizable message generation options
+- Easy-to-use CLI interface
 
-## 설치
+## Installation
 
-npm을 사용하여 전역으로 설치할 수 있습니다:
+You can install it globally using npm:
 
 ```
 npm install -g @j-ho/commit-ai
 ```
 
-## 사용 방법
+## Usage
 
-commit-ai을 사용하기 전에 Anthropic API 키를 설정해야 합니다:
+Before using commit-ai, you need to set up your Anthropic API key:
 
 ```
 commit-ai --key YOUR_API_KEY
 ```
 
-커밋 메시지를 생성하려면 다음과 같이 실행하세요:
+To generate a commit message, simply run:
 
 ```
 commit-ai
 ```
 
-### 옵션
+### Options
 
-- `-k, --key <key>`: Anthropic API 키 설정
-- `-m, --max-tokens <number>`: 메시지 생성을 위한 최대 토큰 수 설정 (기본값: 300)
-- `-t, --temperature <number>`: 메시지 생성을 위한 temperature 설정 (기본값: 0.7)
-- `-f, --format <format>`: 커밋 메시지 형식 설정 (conventional 또는 freeform, 기본값: conventional)
-- `-n, --number <number>`: 생성할 커밋 메시지 제안 수 (기본값: 3)
+- `-k, --key <key>`: Set Anthropic API key
+- `-m, --max-tokens <number>`: Set max tokens for message generation (default: 300)
+- `-t, --temperature <number>`: Set temperature for message generation (default: 0.7)
+- `-f, --format <format>`: Set commit message format (conventional or freeform, default: conventional)
+- `-n, --number <number>`: Number of commit message suggestions to generate (default: 3)
 
-예시:
+Example:
 
 ```
 commit-ai -n 5 -m 400 -t 0.8 -f freeform
 ```
 
-이 명령은 5개의 자유 형식 커밋 메시지를 생성하며, 최대 400 토큰을 사용하고 temperature를 0.8로 설정합니다.
+This command generates 5 freeform commit message suggestions, using a maximum of 400 tokens and a temperature of 0.8.
 
-## 작동 방식
+## How It Works
 
-1. 현재 Git 저장소의 스테이징된 변경사항을 분석합니다.
-2. AI를 사용하여 여러 개의 커밋 메시지 후보를 생성합니다.
-3. 생성된 메시지 목록을 표시합니다.
-4. 사용자가 원하는 메시지를 선택하거나 커밋을 취소할 수 있습니다.
-5. 선택된 메시지로 Git 커밋을 수행합니다.
+1. Analyzes staged changes in the current Git repository
+2. Uses AI to generate multiple commit message candidates
+3. Displays the list of generated messages
+4. Allows the user to select a message or cancel the commit
+5. Performs the Git commit with the selected message
 
-## 개발
+## Development
 
-1. 저장소를 클론합니다.
-2. 의존성을 설치합니다: `npm install`
-3. 프로젝트를 빌드합니다: `npm run build`
-4. 테스트를 실행합니다: `npm test`
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Build the project: `npm run build`
+4. Run tests: `npm test`
 
-## 라이선스
+## License
 
-이 프로젝트는 MIT 라이선스를 따릅니다.
+This project is licensed under the MIT License.
 
-## 기여
+## Contributing
 
-버그 리포트, 기능 제안, 풀 리퀘스트 등 모든 형태의 기여를 환영합니다. 대규모 변경사항의 경우, 먼저 이슈를 열어 논의해주세요.
+We welcome all forms of contributions, including bug reports, feature suggestions, and pull requests. For major changes, please open an issue first to discuss what you would like to change.
