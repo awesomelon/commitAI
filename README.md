@@ -7,6 +7,8 @@ commit-ai is a CLI tool that automatically generates Git commit messages using A
 - Multiple commit message suggestions using AI
 - Customizable message generation options
 - Easy-to-use CLI interface
+- Interactive commit message selection using arrow keys
+- Visual progress indication for commit message generation and commit process
 
 ## Installation
 
@@ -49,10 +51,10 @@ This command generates 5 freeform commit message suggestions, using a maximum of
 ## How It Works
 
 1. Analyzes staged changes in the current Git repository
-2. Uses AI to generate multiple commit message candidates
+2. Uses AI to generate multiple commit message candidates (with visual progress indication)
 3. Displays the list of generated messages
-4. Allows the user to select a message or cancel the commit
-5. Performs the Git commit with the selected message
+4. Allows the user to select a message using arrow keys or cancel the commit
+5. Performs the Git commit with the selected message (with visual progress indication)
 
 ## Development
 
@@ -60,6 +62,14 @@ This command generates 5 freeform commit message suggestions, using a maximum of
 2. Install dependencies: `npm install`
 3. Build the project: `npm run build`
 4. Run tests: `npm test`
+
+## Dependencies
+
+- [@anthropic-ai/sdk](https://www.npmjs.com/package/@anthropic-ai/sdk): For interacting with the Anthropic AI API
+- [@inquirer/prompts](https://www.npmjs.com/package/@inquirer/prompts): For interactive command-line user interfaces
+- [commander](https://www.npmjs.com/package/commander): For building the command-line interface
+- [configstore](https://www.npmjs.com/package/configstore): For storing configuration data
+- [ora](https://www.npmjs.com/package/ora): For elegant terminal spinners
 
 ## License
 
