@@ -95,10 +95,18 @@ class GitCommitMessageGenerator {
   }
 
   parseCommitMessages(response: string): string[] {
-    const regex = /\d+\.\s*(.*?)(?=\n\d+\.|\n*$)/gs;
-    const matches = [...response.matchAll(regex)];
+    const lines = response.split("\n");
 
-    return matches.map((match) => match[1].trim());
+    const commitMessages: string[] = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const match = lines[i].match(/^\d+\.\s*"(.+)"$/);
+      if (match) {
+        commitMessages.push(match[1].trim());
+      }
+    }
+
+    return commitMessages;
   }
 
   async commitChanges(message: string): Promise<void> {
