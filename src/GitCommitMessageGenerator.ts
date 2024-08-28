@@ -1,11 +1,14 @@
 import { execSync } from "child_process";
 import { Anthropic, ClientOptions } from "@anthropic-ai/sdk";
+import path from "node:path";
+import * as fs from "node:fs";
+import * as os from "node:os";
 
 interface GeneratorOptions {
   maxTokens?: number;
   temperature?: number;
   model?: string;
-  commitMessageFormat?: "conventional" | "freeform";
+  commitMessageFormat?: "conventional" | "freeform" | "template";
   numberOfSuggestions?: number;
   maxFileSizeKB?: number;
 }
@@ -28,7 +31,8 @@ class GitCommitMessageGenerator {
 
   async generateCommitMessages(): Promise<string[]> {
     const diff = this.getGitDiff();
-    const response = await this.callClaudeAPI(diff);
+    const template = this.getCommitTemplate();
+    const response = await this.callClaudeAPI(diff, template);
     return this.parseCommitMessages(response.content[0].text);
   }
 
@@ -76,18 +80,57 @@ class GitCommitMessageGenerator {
     return skipPatterns.some((pattern) => pattern.test(filename));
   }
 
-  private async callClaudeAPI(diff: string): Promise<any> {
+  private getCommitTemplate(): string | null {
     try {
+      const templatePath = execSync("git config --get commit.template")
+        .toString()
+        .trim();
+      if (templatePath) {
+        let fullPath = templatePath;
+        if (!path.isAbsolute(templatePath)) {
+          fullPath = path.resolve(os.homedir(), templatePath);
+        }
+        console.log("Full template path:", fullPath); // 디버깅 로그
+
+        if (fs.existsSync(fullPath)) {
+          const content = fs.readFileSync(fullPath, "utf-8");
+          console.log("Template content:", content); // 디버깅 로그
+          return content;
+        } else {
+          console.warn(`Commit template file not found: ${fullPath}`);
+        }
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        console.warn("Commit template not set in Git config");
+      } else {
+        console.warn(
+          "Failed to get commit template:",
+          (error as Error).message,
+        );
+      }
+    }
+    return null;
+  }
+
+  private async callClaudeAPI(
+    diff: string,
+    template: string | null,
+  ): Promise<any> {
+    try {
+      let prompt = `Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff:\n\n${diff}`;
+
+      if (template && this.options.commitMessageFormat === "template") {
+        prompt += `\n\nUse the following commit message template:\n\n${template}`;
+      } else if (this.options.commitMessageFormat === "conventional") {
+        prompt += "\n\nUse the Conventional Commits format.";
+      }
+
       return await this.anthropic.messages.create({
         model: this.options.model,
         max_tokens: this.options.maxTokens,
         temperature: this.options.temperature,
-        messages: [
-          {
-            role: "user",
-            content: `Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff:\n\n${diff}`,
-          },
-        ],
+        messages: [{ role: "user", content: prompt }],
       });
     } catch (error) {
       throw new Error("Failed to call Claude API: " + (error as Error).message);
