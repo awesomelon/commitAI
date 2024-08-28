@@ -215,4 +215,50 @@ describe("GitCommitMessageGenerator", () => {
       }),
     );
   });
+
+  describe("parseCommitMessages", () => {
+    test("correctly parses multi-line commit messages", () => {
+      const generator = new GitCommitMessageGenerator("fake-api-key");
+      const response = `Here are 3 commit messages using the Conventional Commits format for the given Git diff:
+
+1. "feat(generator): add support for commit message templates"
+
+2. "test(generator): add unit tests for commit template functionality"
+
+3. "docs(readme): add blank line after project description"`;
+
+      const result = (generator as any).parseCommitMessages(response);
+
+      expect(result).toEqual([
+        "feat(generator): add support for commit message templates",
+        "test(generator): add unit tests for commit template functionality",
+        "docs(readme): add blank line after project description",
+      ]);
+    });
+
+    test("handles single-line commit messages", () => {
+      const generator = new GitCommitMessageGenerator("fake-api-key");
+      const response = `1. "feat: add new feature"
+2. "fix: resolve bug"
+3. "chore: update dependencies"`;
+
+      const result = (generator as any).parseCommitMessages(response);
+
+      expect(result).toEqual([
+        "feat: add new feature",
+        "fix: resolve bug",
+        "chore: update dependencies",
+      ]);
+    });
+
+    test("correctly extracts messages with or without quotes", () => {
+      const generator = new GitCommitMessageGenerator("fake-api-key");
+      const response = '1. "First commit message"\n2. Second commit message';
+      const messages = (generator as any).parseCommitMessages(response);
+      expect(messages).toEqual([
+        "First commit message",
+        "Second commit message",
+      ]);
+    });
+  });
 });

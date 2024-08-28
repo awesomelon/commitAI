@@ -142,11 +142,12 @@ class GitCommitMessageGenerator {
     let currentMessage = "";
 
     for (const line of lines) {
-      if (line.match(/^\d+\.\s/)) {
+      const match = line.match(/^\d+\.\s*"?(.+?)"?$/);
+      if (match) {
         if (currentMessage) {
           commitMessages.push(currentMessage.trim());
         }
-        currentMessage = line.replace(/^\d+\.\s/, "");
+        currentMessage = match[1];
       } else if (line.trim() && currentMessage) {
         currentMessage += " " + line.trim();
       }
@@ -156,7 +157,7 @@ class GitCommitMessageGenerator {
       commitMessages.push(currentMessage.trim());
     }
 
-    return commitMessages;
+    return commitMessages.map((msg) => msg.replace(/^"(.+)"$/, "$1"));
   }
 
   async commitChanges(message: string): Promise<void> {
