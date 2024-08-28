@@ -61,9 +61,9 @@ This command generates 5 freeform commit message suggestions, using a maximum of
 ## Development
 
 1. Clone the repository
-2. Install dependencies: `npm install`
-3. Build the project: `npm run build`
-4. Run tests: `npm test`
+2. Install dependencies: `pnpm install`
+3. Build the project: `pnpm build`
+4. Run tests: `pnpm test`
 
 ## Dependencies
 
