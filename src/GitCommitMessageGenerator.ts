@@ -87,14 +87,14 @@ class GitCommitMessageGenerator {
         .trim();
       if (templatePath) {
         let fullPath = templatePath;
-        if (!path.isAbsolute(templatePath)) {
-          fullPath = path.resolve(os.homedir(), templatePath);
+        if (templatePath.startsWith("~")) {
+          fullPath = path.join(os.homedir(), templatePath.slice(1));
+        } else if (!path.isAbsolute(templatePath)) {
+          fullPath = path.resolve(process.cwd(), templatePath);
         }
-        console.log("Full template path:", fullPath); // 디버깅 로그
 
         if (fs.existsSync(fullPath)) {
           const content = fs.readFileSync(fullPath, "utf-8");
-          console.log("Template content:", content); // 디버깅 로그
           return content;
         } else {
           console.warn(`Commit template file not found: ${fullPath}`);
@@ -112,7 +112,6 @@ class GitCommitMessageGenerator {
     }
     return null;
   }
-
   private async callClaudeAPI(
     diff: string,
     template: string | null,
@@ -139,14 +138,22 @@ class GitCommitMessageGenerator {
 
   parseCommitMessages(response: string): string[] {
     const lines = response.split("\n");
-
     const commitMessages: string[] = [];
+    let currentMessage = "";
 
-    for (let i = 0; i < lines.length; i++) {
-      const match = lines[i].match(/^\d+\.\s*"(.+)"$/);
-      if (match) {
-        commitMessages.push(match[1].trim());
+    for (const line of lines) {
+      if (line.match(/^\d+\.\s/)) {
+        if (currentMessage) {
+          commitMessages.push(currentMessage.trim());
+        }
+        currentMessage = line.replace(/^\d+\.\s/, "");
+      } else if (line.trim() && currentMessage) {
+        currentMessage += " " + line.trim();
       }
+    }
+
+    if (currentMessage) {
+      commitMessages.push(currentMessage.trim());
     }
 
     return commitMessages;
