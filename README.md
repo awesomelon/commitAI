@@ -1,16 +1,17 @@
 # commit-ai
 
-commit-ai is a CLI tool that automatically generates Git commit messages using AI.
-
+commit-ai is a CLI tool that automatically generates Git commit messages using AI, now with support for Git commit templates.
 
 ## Features
 
 - Multiple commit message suggestions using AI
+- Support for Git commit templates
 - Customizable message generation options
 - Easy-to-use CLI interface
 - Interactive commit message selection using arrow keys
 - Visual progress indication for commit message generation and commit process
 - Intelligent file filtering to exclude large files and specific file types (e.g., lock files)
+- Improved handling of file paths, including support for relative paths and paths starting with '~'
 
 ## Installation
 
@@ -39,25 +40,40 @@ commit-ai
 - `-k, --key <key>`: Set Anthropic API key
 - `-m, --max-tokens <number>`: Set max tokens for message generation (default: 300)
 - `-t, --temperature <number>`: Set temperature for message generation (default: 0.7)
-- `-f, --format <format>`: Set commit message format (conventional or freeform, default: conventional)
+- `-f, --format <format>`: Set commit message format (conventional, freeform, or template, default: conventional)
 - `-n, --number <number>`: Number of commit message suggestions to generate (default: 3)
 - `--max-file-size <number>`: Maximum file size in KB to include in diff (default: 100)
 
 Example:
 
 ```
-commit-ai -n 5 -m 400 -t 0.8 -f freeform --max-file-size 200
+commit-ai -n 5 -m 400 -t 0.8 -f template --max-file-size 200
 ```
 
-This command generates 5 freeform commit message suggestions, using a maximum of 400 tokens, a temperature of 0.8, and includes files up to 200KB in size.
+This command generates 5 commit message suggestions using the Git commit template (if available), using a maximum of 400 tokens, a temperature of 0.8, and includes files up to 200KB in size.
+
+### Using Git Commit Templates
+
+commit-ai now supports Git commit templates. To use this feature:
+
+1. Set up a Git commit template:
+   ```
+   git config --global commit.template ~/.gitmessage
+   ```
+2. Create your template file (e.g., ~/.gitmessage)
+3. Run commit-ai with the `-f template` option
+
+commit-ai will use your template to generate more structured commit messages.
 
 ## How It Works
 
 1. Analyzes staged changes in the current Git repository, filtering out large files and specific file types
-2. Uses AI to generate multiple commit message candidates (with visual progress indication)
-3. Displays the list of generated messages
-4. Allows the user to select a message using arrow keys or cancel the commit
-5. Performs the Git commit with the selected message (with visual progress indication)
+2. Retrieves the Git commit template if available and requested
+3. Uses AI to generate multiple commit message candidates (with visual progress indication)
+4. Parses and processes the AI-generated commit messages
+5. Displays the list of generated messages
+6. Allows the user to select a message using arrow keys or cancel the commit
+7. Performs the Git commit with the selected message (with visual progress indication)
 
 ## Development
 
@@ -81,3 +97,12 @@ This project is licensed under the MIT License.
 ## Contributing
 
 We welcome all forms of contributions, including bug reports, feature suggestions, and pull requests. For major changes, please open an issue first to discuss what you would like to change.
+
+## Troubleshooting
+
+If you encounter any issues with file paths or commit template detection, please ensure that:
+1. Your Git commit template path is correctly set in your Git config
+2. The commit template file exists and is readable
+3. You're using the correct format option (`-f template`) when you want to use a Git commit template
+
+For any other issues or questions, please open an issue on the GitHub repository.

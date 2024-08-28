@@ -120,7 +120,7 @@ class GitCommitMessageGenerator {
       let prompt = `Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff:\n\n${diff}`;
 
       if (template && this.options.commitMessageFormat === "template") {
-        prompt += `\n\nUse the following commit message template:\n\n${template}`;
+        prompt += `Note the commented out ones for reference only. \n\nUse the following commit message template:\n\n${template}`;
       } else if (this.options.commitMessageFormat === "conventional") {
         prompt += "\n\nUse the Conventional Commits format.";
       }
