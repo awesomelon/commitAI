@@ -105,18 +105,16 @@ class GitCommitMessageGenerator {
     const lines = response.split("\n");
     const commitMessages: CommitMessage[] = [];
     let currentMessage: string[] = [];
-    let isInMessage = false;
 
     for (const line of lines) {
-      const match = line.match(/^\d+\.\s*"?(.+?)"?$/);
+      const match = line.match(/^\d+\.\s*(.+)$/);
       if (match) {
         if (currentMessage.length > 0) {
           commitMessages.push(this.createCommitMessage(currentMessage));
           currentMessage = [];
         }
-        currentMessage.push(match[1]);
-        isInMessage = true;
-      } else if (isInMessage && line.trim()) {
+        currentMessage.push(match[1].replace(/^"|"$/g, "").trim());
+      } else if (currentMessage.length > 0 && line.trim()) {
         currentMessage.push(line.trim());
       }
     }
@@ -129,7 +127,7 @@ class GitCommitMessageGenerator {
   }
 
   private createCommitMessage(lines: string[]): CommitMessage {
-    const title = lines[0].replace(/^"(.+)"$/, "$1");
+    const title = lines[0];
     const body = lines.slice(1).join("\n").trim();
     return { title, body };
   }

@@ -194,13 +194,13 @@ describe("GitCommitMessageGenerator", () => {
       const generator = new GitCommitMessageGenerator("fake-api-key");
       const response = `Here are 3 commit messages using the Conventional Commits format for the given Git diff:
 
-1. "feat(generator): add support for commit message templates"
+1. feat(generator): add support for commit message templates
 This feature allows users to use custom commit message templates.
 
-2. "test(generator): add unit tests for commit template functionality"
+2. test(generator): add unit tests for commit template functionality
 Added comprehensive unit tests to ensure the commit template feature works as expected.
 
-3. "docs(readme): add blank line after project description"
+3. docs(readme): add blank line after project description
 Improved README formatting for better readability.`;
 
       const result = (generator as any).parseCommitMessages(response);
@@ -224,9 +224,9 @@ Improved README formatting for better readability.`;
 
     test("handles single-line commit messages", () => {
       const generator = new GitCommitMessageGenerator("fake-api-key");
-      const response = `1. "feat: add new feature"
-2. "fix: resolve bug"
-3. "chore: update dependencies"`;
+      const response = `1. feat: add new feature
+2. fix: resolve bug
+3. chore: update dependencies`;
 
       const result = (generator as any).parseCommitMessages(response);
 
@@ -245,6 +245,18 @@ Improved README formatting for better readability.`;
       expect(messages).toEqual([
         { title: "feat: First commit message", body: "Body of first message" },
         { title: "fix: Second commit message", body: "Body of second message" },
+      ]);
+    });
+
+    test("handles messages with empty bodies", () => {
+      const generator = new GitCommitMessageGenerator("fake-api-key");
+      const response =
+        "1. feat: Add new feature\n\n2. fix: Resolve bug\n\n3. chore: Update dependencies";
+      const messages = (generator as any).parseCommitMessages(response);
+      expect(messages).toEqual([
+        { title: "feat: Add new feature", body: "" },
+        { title: "fix: Resolve bug", body: "" },
+        { title: "chore: Update dependencies", body: "" },
       ]);
     });
   });
