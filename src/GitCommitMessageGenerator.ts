@@ -1,6 +1,9 @@
 import { execSync } from "child_process";
 import { Anthropic, ClientOptions } from "@anthropic-ai/sdk";
-import { COMMIT_MESSAGE_TEMPLATE } from "./commitMessageTemplate.js";
+import {
+  COMMIT_MESSAGE_EXAMPLE,
+  COMMIT_MESSAGE_TEMPLATE,
+} from "./commitMessageTemplate.js";
 
 interface GeneratorOptions {
   maxTokens?: number;
@@ -33,6 +36,7 @@ class GitCommitMessageGenerator {
   async generateCommitMessages(): Promise<CommitMessage[]> {
     const diff = this.getGitDiff();
     const response = await this.callClaudeAPI(diff);
+    console.log(response);
     return this.parseCommitMessages(response.content[0].text);
   }
 
@@ -82,7 +86,7 @@ class GitCommitMessageGenerator {
 
   private async callClaudeAPI(diff: string): Promise<any> {
     try {
-      let prompt = `Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff:`;
+      let prompt = `template: ${COMMIT_MESSAGE_TEMPLATE}. \n\n example: ${COMMIT_MESSAGE_EXAMPLE}. \n Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff:`;
       prompt += `\n\n${diff}`;
 
       return await this.anthropic.messages.create({
@@ -92,7 +96,7 @@ class GitCommitMessageGenerator {
         messages: [
           {
             role: "user",
-            content: `${prompt}\n\n ${COMMIT_MESSAGE_TEMPLATE} Please generate a commit message based on the attached commit template.`,
+            content: prompt,
           },
         ],
       });

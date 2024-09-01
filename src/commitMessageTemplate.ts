@@ -1,17 +1,14 @@
 export const COMMIT_MESSAGE_TEMPLATE = `
-    Example commit message template
     ======================
-    # <type>: <subject>
+    # <type>: <subject> (required)
     # Subject 50 characters or less
-    # Separate headings and body by a single line
     
-    # <BLANK LINE>
-    # Body Message
+    # Body Message (required)
     # 72 characters or less
     # Why did you make this change?
     # Separate multi-line messages with "-"
    
-    # <BLANK LINE>
+   
     # --- COMMIT END ---
     # <type> (required)
     # - feat: A new feature
@@ -34,4 +31,13 @@ export const COMMIT_MESSAGE_TEMPLATE = `
     # - Use the body to explain what changes you have made and why you made them
     # - Do not assume the reviewer understands what the original problem was, ensure you add it
     ======================    
+`;
+
+export const COMMIT_MESSAGE_EXAMPLE = `   
+    feat: Add new feature to the app
+
+    Add new feature to the app
+     - Add new feature to the app
+     - Add new feature to the app
+     - Add new feature to the app
 `;
