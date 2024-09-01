@@ -2,6 +2,7 @@ import GitCommitMessageGenerator from "../src/GitCommitMessageGenerator";
 import { Anthropic } from "@anthropic-ai/sdk";
 import { execSync } from "child_process";
 import fs from "fs";
+import { COMMIT_MESSAGE_TEMPLATE } from "../src/commitMessageTemplate";
 
 jest.mock("@anthropic-ai/sdk");
 jest.mock("child_process");
@@ -31,10 +32,9 @@ describe("GitCommitMessageGenerator", () => {
 
   test("constructor sets default options", () => {
     expect((generator as any).options).toEqual({
-      maxTokens: 100,
+      maxTokens: 400,
       temperature: 0,
       model: "claude-3-5-sonnet-20240620",
-      commitMessageFormat: "conventional",
       numberOfSuggestions: 3,
       maxFileSizeKB: 100,
     });
@@ -55,22 +55,32 @@ describe("GitCommitMessageGenerator", () => {
   });
 
   test("parseCommitMessages correctly extracts messages", () => {
-    const response = '1. "First commit message"\n2. "Second commit message"';
+    const response =
+      '1. "feat: First commit message"\nThis is the body of the first message.\n\n2. "fix: Second commit message"\nThis is the body of the second message.';
     const messages = (generator as any).parseCommitMessages(response);
-    expect(messages).toEqual(["First commit message", "Second commit message"]);
+    expect(messages).toEqual([
+      {
+        title: "feat: First commit message",
+        body: "This is the body of the first message.",
+      },
+      {
+        title: "fix: Second commit message",
+        body: "This is the body of the second message.",
+      },
+    ]);
   });
 
   test("generateCommitMessages calls necessary methods and returns messages", async () => {
     const mockDiff = "mock diff";
-    const mockTemplate = "mock template";
     const mockResponse = {
-      content: [{ text: '1. "Generated commit message"' }],
+      content: [
+        {
+          text: '1. "feat: Generated commit message"\nThis is the body of the message.',
+        },
+      ],
     };
 
     (generator as any).getGitDiff = jest.fn().mockReturnValue(mockDiff);
-    (generator as any).getCommitTemplate = jest
-      .fn()
-      .mockReturnValue(mockTemplate);
     (generator as any).callClaudeAPI = jest
       .fn()
       .mockResolvedValue(mockResponse);
@@ -78,21 +88,25 @@ describe("GitCommitMessageGenerator", () => {
     const messages = await generator.generateCommitMessages();
 
     expect((generator as any).getGitDiff).toHaveBeenCalled();
-    expect((generator as any).getCommitTemplate).toHaveBeenCalled();
-    expect((generator as any).callClaudeAPI).toHaveBeenCalledWith(
-      mockDiff,
-      mockTemplate,
-    );
-    expect(messages).toEqual(["Generated commit message"]);
+    expect((generator as any).callClaudeAPI).toHaveBeenCalledWith(mockDiff);
+    expect(messages).toEqual([
+      {
+        title: "feat: Generated commit message",
+        body: "This is the body of the message.",
+      },
+    ]);
   });
 
   test("commitChanges executes git commit command", async () => {
     mockedExecSync.mockReturnValueOnce(Buffer.from("staged changes"));
 
-    await generator.commitChanges("Test commit message");
+    await generator.commitChanges({
+      title: "feat: Test commit message",
+      body: "Test commit body",
+    });
 
     expect(mockedExecSync).toHaveBeenCalledWith(
-      'git commit -m "Test commit message"',
+      'git commit -m "feat: Test commit message\n\nTest commit body"',
     );
   });
 
@@ -100,7 +114,10 @@ describe("GitCommitMessageGenerator", () => {
     mockedExecSync.mockReturnValueOnce(Buffer.from(""));
 
     await expect(
-      generator.commitChanges("Test commit message"),
+      generator.commitChanges({
+        title: "feat: Test commit message",
+        body: "Test commit body",
+      }),
     ).rejects.toThrow("No changes staged for commit");
   });
 
@@ -120,7 +137,7 @@ describe("GitCommitMessageGenerator", () => {
 
     expect(mockCreate).toHaveBeenCalledWith({
       model: "claude-3-5-sonnet-20240620",
-      max_tokens: 100,
+      max_tokens: 400,
       temperature: 0,
       messages: [
         {
@@ -150,20 +167,7 @@ describe("GitCommitMessageGenerator", () => {
     );
   });
 
-  test("getCommitTemplate returns null when no template is set", () => {
-    mockedExecSync.mockImplementation(() => {
-      throw new Error("No commit template set");
-    });
-
-    const template = (generator as any).getCommitTemplate();
-    expect(template).toBeNull();
-    expect(consoleWarnSpy).toHaveBeenCalledWith(
-      "Failed to get commit template:",
-      "No commit template set",
-    );
-  });
-
-  test("callClaudeAPI includes template in prompt when commitMessageFormat is 'template'", async () => {
+  test("callClaudeAPI includes COMMIT_MESSAGE_TEMPLATE in the prompt", async () => {
     const mockCreate = jest
       .fn()
       .mockResolvedValue({ content: [{ text: "API Response" }] });
@@ -171,45 +175,14 @@ describe("GitCommitMessageGenerator", () => {
       () => ({ messages: { create: mockCreate } }) as any,
     );
 
-    const generator = new GitCommitMessageGenerator("fake-api-key", {
-      commitMessageFormat: "template",
-    });
-    const diff = "Test diff";
-    const template = "Test template";
-    await (generator as any).callClaudeAPI(diff, template);
+    const generator = new GitCommitMessageGenerator("fake-api-key");
+    await (generator as any).callClaudeAPI("Test diff");
 
     expect(mockCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         messages: [
           expect.objectContaining({
-            content: expect.stringContaining("Test template"),
-          }),
-        ],
-      }),
-    );
-  });
-
-  test("callClaudeAPI includes Conventional Commits instruction when commitMessageFormat is 'conventional'", async () => {
-    const mockCreate = jest
-      .fn()
-      .mockResolvedValue({ content: [{ text: "API Response" }] });
-    (Anthropic as jest.MockedClass<typeof Anthropic>).mockImplementation(
-      () => ({ messages: { create: mockCreate } }) as any,
-    );
-
-    const generator = new GitCommitMessageGenerator("fake-api-key", {
-      commitMessageFormat: "conventional",
-    });
-    const diff = "Test diff";
-    await (generator as any).callClaudeAPI(diff, null);
-
-    expect(mockCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        messages: [
-          expect.objectContaining({
-            content: expect.stringContaining(
-              "Use the Conventional Commits format",
-            ),
+            content: expect.stringContaining(COMMIT_MESSAGE_TEMPLATE),
           }),
         ],
       }),
@@ -222,17 +195,30 @@ describe("GitCommitMessageGenerator", () => {
       const response = `Here are 3 commit messages using the Conventional Commits format for the given Git diff:
 
 1. "feat(generator): add support for commit message templates"
+This feature allows users to use custom commit message templates.
 
 2. "test(generator): add unit tests for commit template functionality"
+Added comprehensive unit tests to ensure the commit template feature works as expected.
 
-3. "docs(readme): add blank line after project description"`;
+3. "docs(readme): add blank line after project description"
+Improved README formatting for better readability.`;
 
       const result = (generator as any).parseCommitMessages(response);
 
       expect(result).toEqual([
-        "feat(generator): add support for commit message templates",
-        "test(generator): add unit tests for commit template functionality",
-        "docs(readme): add blank line after project description",
+        {
+          title: "feat(generator): add support for commit message templates",
+          body: "This feature allows users to use custom commit message templates.",
+        },
+        {
+          title:
+            "test(generator): add unit tests for commit template functionality",
+          body: "Added comprehensive unit tests to ensure the commit template feature works as expected.",
+        },
+        {
+          title: "docs(readme): add blank line after project description",
+          body: "Improved README formatting for better readability.",
+        },
       ]);
     });
 
@@ -245,19 +231,20 @@ describe("GitCommitMessageGenerator", () => {
       const result = (generator as any).parseCommitMessages(response);
 
       expect(result).toEqual([
-        "feat: add new feature",
-        "fix: resolve bug",
-        "chore: update dependencies",
+        { title: "feat: add new feature", body: "" },
+        { title: "fix: resolve bug", body: "" },
+        { title: "chore: update dependencies", body: "" },
       ]);
     });
 
     test("correctly extracts messages with or without quotes", () => {
       const generator = new GitCommitMessageGenerator("fake-api-key");
-      const response = '1. "First commit message"\n2. Second commit message';
+      const response =
+        '1. "feat: First commit message"\nBody of first message\n\n2. fix: Second commit message\nBody of second message';
       const messages = (generator as any).parseCommitMessages(response);
       expect(messages).toEqual([
-        "First commit message",
-        "Second commit message",
+        { title: "feat: First commit message", body: "Body of first message" },
+        { title: "fix: Second commit message", body: "Body of second message" },
       ]);
     });
   });
