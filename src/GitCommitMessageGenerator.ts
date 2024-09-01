@@ -36,7 +36,7 @@ class GitCommitMessageGenerator {
   async generateCommitMessages(): Promise<CommitMessage[]> {
     const diff = this.getGitDiff();
     const response = await this.callClaudeAPI(diff);
-    console.log(response);
+
     return this.parseCommitMessages(response.content[0].text);
   }
 
