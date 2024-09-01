@@ -55,15 +55,15 @@ program
 
       spinner.succeed("Commit messages generated successfully.");
 
+      const choices = commitMessages.map((msg, index) => ({
+        name: `${index + 1}. ${msg.title}`,
+        value: msg,
+        description: `\n${msg.title}\n\n${msg.body}`,
+      }));
+
       const answer = await select({
         message: "Select a commit message to use",
-        choices: [
-          ...commitMessages.map((msg, index) => ({
-            name: `${index + 1}. ${msg.title}`,
-            value: msg,
-          })),
-          { name: "Cancel", value: null },
-        ],
+        choices: [...choices, { name: `🌟. Cancel`, value: null }],
       });
 
       if (answer) {
