@@ -23,11 +23,6 @@ program
     "Set temperature for message generation",
     "0.7",
   )
-  .option(
-    "-f, --format <format>",
-    "Set commit message format (conventional or freeform)",
-    "conventional",
-  )
   .option("-n, --number <number>", "Number of commit message suggestions", "3")
   .option(
     "--max-file-size <number>",
@@ -50,7 +45,6 @@ program
     const generator = new GitCommitMessageGenerator(apiKey, {
       maxTokens: parseInt(options.maxTokens),
       temperature: parseFloat(options.temperature),
-      commitMessageFormat: options.format as "conventional" | "freeform",
       numberOfSuggestions: parseInt(options.number),
       maxFileSizeKB: parseInt(options.maxFileSize),
     });
@@ -58,13 +52,14 @@ program
     try {
       const spinner = ora("Generating commit messages...").start();
       const commitMessages = await generator.generateCommitMessages();
+
       spinner.succeed("Commit messages generated successfully.");
 
       const answer = await select({
         message: "Select a commit message to use",
         choices: [
           ...commitMessages.map((msg, index) => ({
-            name: `${index + 1}. ${msg}`,
+            name: `${index + 1}. ${msg.title}`,
             value: msg,
           })),
           { name: "Cancel", value: null },
