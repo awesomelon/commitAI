@@ -3,6 +3,7 @@ export const COMMIT_MESSAGE_TEMPLATE = `
     ======================
     # <type>: <subject>
     # Subject 50 characters or less
+    # Separate headings and body by a single line
     
     # <BLANK LINE>
     # Body Message
