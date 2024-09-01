@@ -27,7 +27,7 @@ export const COMMIT_MESSAGE_TEMPLATE = `
     - Do not end the subject line with a period
     - Separate subject from body with a blank line
     - Use the body to explain what changes you have made and why you made them
-    - Do not assume the reviewer understands what the original problem was, ensure you add it
+    - Do not assume the reviewer understands what the original problem was, ensure you add it    
 `;
 
 export const COMMIT_MESSAGE_EXAMPLE = `   
