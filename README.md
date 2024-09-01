@@ -1,10 +1,10 @@
 # commit-ai
 
-commit-ai is a CLI tool that automatically generates Git commit messages using AI, now with support for Git commit templates.
+commit-ai is a CLI tool that automatically generates Git commit messages using AI, now with support for custom commit message templates.
 
 ![example](./assets/example.gif)
 
-## Features
+## Key Features
 
 - Multiple commit message suggestions using AI
 - Customizable message generation options

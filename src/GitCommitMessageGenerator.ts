@@ -22,7 +22,7 @@ class GitCommitMessageGenerator {
   constructor(apiKey: string, options: GeneratorOptions = {}) {
     this.anthropic = new Anthropic({ apiKey } as ClientOptions);
     this.options = {
-      maxTokens: options.maxTokens || 1000,
+      maxTokens: options.maxTokens || 400,
       temperature: options.temperature || 0,
       model: options.model || "claude-3-5-sonnet-20240620",
       numberOfSuggestions: options.numberOfSuggestions || 3,
