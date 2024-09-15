@@ -1,6 +1,6 @@
 {
   "name": "@j-ho/commit-ai",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Automatically generate commit messages using AI",
   "type": "module",
   "main": "dist/index.js",
