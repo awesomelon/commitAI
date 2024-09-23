@@ -86,7 +86,7 @@ class GitCommitMessageGenerator {
 
   private async callClaudeAPI(diff: string): Promise<any> {
     try {
-      let prompt = `template: ${COMMIT_MESSAGE_TEMPLATE}. \n\n example: ${COMMIT_MESSAGE_EXAMPLE}. \n Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff:`;
+      let prompt = `You're a professional Git commit message writer. \n Create a commit message using the template and examples provided. \n template: ${COMMIT_MESSAGE_TEMPLATE}. \n example: ${COMMIT_MESSAGE_EXAMPLE}. \n\n Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff:`;
       prompt += `\n\n${diff} \n\n If there are no changes, You must use the return “No changes”.`;
 
       return await this.anthropic.messages.create({
