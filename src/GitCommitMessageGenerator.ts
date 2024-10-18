@@ -1,6 +1,9 @@
-import { execSync } from 'child_process';
-import { Anthropic, ClientOptions } from '@anthropic-ai/sdk';
-import { COMMIT_MESSAGE_EXAMPLE, COMMIT_MESSAGE_TEMPLATE } from './commitMessageTemplate.js';
+import { execSync } from "child_process";
+import { Anthropic, ClientOptions } from "@anthropic-ai/sdk";
+import {
+  COMMIT_MESSAGE_EXAMPLE,
+  COMMIT_MESSAGE_TEMPLATE,
+} from "./commitMessageTemplate.js";
 
 interface GeneratorOptions {
   maxTokens?: number;
@@ -24,11 +27,13 @@ class GitCommitMessageGenerator {
     this.options = this.initializeOptions(options);
   }
 
-  private initializeOptions(options: GeneratorOptions): Required<GeneratorOptions> {
+  private initializeOptions(
+    options: GeneratorOptions,
+  ): Required<GeneratorOptions> {
     return {
       maxTokens: options.maxTokens || 400,
       temperature: options.temperature || 0,
-      model: options.model || 'claude-3-5-sonnet-20240620',
+      model: options.model || "claude-3-5-sonnet-20240620",
       numberOfSuggestions: options.numberOfSuggestions || 3,
       maxFileSizeKB: options.maxFileSizeKB || 100,
     };
@@ -40,7 +45,9 @@ class GitCommitMessageGenerator {
       const response = await this.callClaudeAPI(diff);
       return this.parseCommitMessages(response.content[0].text);
     } catch (error) {
-      console.error(`Error generating commit messages: ${(error as Error).message}`);
+      console.error(
+        `Error generating commit messages: ${(error as Error).message}`,
+      );
       throw error;
     }
   }
@@ -55,17 +62,20 @@ class GitCommitMessageGenerator {
   }
 
   private getStagedFiles(): string[] {
-    return execSync('git diff --cached --name-only').toString().split('\n').filter(Boolean);
+    return execSync("git diff --cached --name-only")
+      .toString()
+      .split("\n")
+      .filter(Boolean);
   }
 
   private getFilteredDiff(stagedFiles: string[]): string {
-    let filteredDiff = '';
+    let filteredDiff = "";
     for (const file of stagedFiles) {
       if (this.shouldSkipFile(file)) continue;
       const fileDiff = this.getFileDiff(file);
       if (this.isFileTooLarge(fileDiff)) {
         console.warn(
-          `Skipping large file: ${file} (${this.getFileSizeKB(fileDiff).toFixed(2)} KB)`
+          `Skipping large file: ${file} (${this.getFileSizeKB(fileDiff).toFixed(2)} KB)`,
         );
         continue;
       }
@@ -83,7 +93,7 @@ class GitCommitMessageGenerator {
   }
 
   private getFileSizeKB(fileDiff: string): number {
-    return Buffer.byteLength(fileDiff, 'utf8') / 1024;
+    return Buffer.byteLength(fileDiff, "utf8") / 1024;
   }
 
   private shouldSkipFile(filename: string): boolean {
@@ -104,7 +114,7 @@ class GitCommitMessageGenerator {
         model: this.options.model,
         max_tokens: this.options.maxTokens,
         temperature: this.options.temperature,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: "user", content: prompt }],
       });
     } catch (error) {
       throw new Error(`Failed to call Claude API: ${(error as Error).message}`);
@@ -118,7 +128,7 @@ class GitCommitMessageGenerator {
   }
 
   parseCommitMessages(response: string): CommitMessage[] {
-    const lines = response.split('\n');
+    const lines = response.split("\n");
     const commitMessages: CommitMessage[] = [];
     let currentMessage: string[] = [];
 
@@ -129,7 +139,7 @@ class GitCommitMessageGenerator {
           commitMessages.push(this.createCommitMessage(currentMessage));
           currentMessage = [];
         }
-        currentMessage.push(match[1].replace(/^"|"$/g, '').trim());
+        currentMessage.push(match[1].replace(/^"|"$/g, "").trim());
       } else if (currentMessage.length > 0 && line.trim()) {
         currentMessage.push(line.trim());
       }
@@ -144,7 +154,7 @@ class GitCommitMessageGenerator {
 
   private createCommitMessage(lines: string[]): CommitMessage {
     const title = lines[0];
-    const body = lines.slice(1).join('\n').trim();
+    const body = lines.slice(1).join("\n").trim();
     return { title, body };
   }
 
@@ -153,14 +163,16 @@ class GitCommitMessageGenerator {
       this.validateStagedChanges();
       this.executeGitCommit(message);
     } catch (error) {
-      throw new Error(`Failed to commit changes: ${(error as Error).message}`);
+      throw new Error(`No changes staged for commit`);
     }
   }
 
   private validateStagedChanges(): void {
-    const stagedChanges = execSync('git diff --cached --name-only').toString().trim();
+    const stagedChanges = execSync("git diff --cached --name-only")
+      .toString()
+      .trim();
     if (!stagedChanges) {
-      throw new Error('No staged changes to commit');
+      throw new Error("No staged changes to commit");
     }
   }
 
