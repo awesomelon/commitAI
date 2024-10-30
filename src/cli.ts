@@ -108,6 +108,11 @@ program
   .description("Automatically generate commit messages using AI")
   .option("-k, --key <key>", "Set Anthropic API key")
   .option("-n, --number <number>", "Number of commit message suggestions", "3")
+  .option(
+    "-l, --language <code>",
+    "Language for commit messages (e.g., en, ko, ja)",
+    "en",
+  )
   .action(async (options) => {
     if (options.key) {
       await saveApiKey(options.key);
@@ -119,6 +124,7 @@ program
 
     const generator = new GitCommitMessageGenerator(apiKey, {
       numberOfSuggestions: parseInt(options.number),
+      language: options.language,
     });
 
     try {

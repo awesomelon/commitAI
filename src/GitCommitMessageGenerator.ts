@@ -11,6 +11,7 @@ interface GeneratorOptions {
   model?: string;
   numberOfSuggestions?: number;
   maxFileSizeKB?: number;
+  language?: string;
 }
 
 interface CommitMessage {
@@ -33,9 +34,10 @@ class GitCommitMessageGenerator {
     return {
       maxTokens: options.maxTokens || 400,
       temperature: options.temperature || 0,
-      model: options.model || "claude-3-5-sonnet-20240620",
+      model: options.model || "claude-3-5-sonnet-20241022",
       numberOfSuggestions: options.numberOfSuggestions || 3,
       maxFileSizeKB: options.maxFileSizeKB || 100,
+      language: options.language || "en",
     };
   }
 
@@ -122,8 +124,21 @@ class GitCommitMessageGenerator {
   }
 
   private buildPrompt(diff: string): string {
-    let prompt = `You are a professional Git commit message writer. \n Write commit messages using the provided template and example. \n Template: ${COMMIT_MESSAGE_TEMPLATE}. \n Example: ${COMMIT_MESSAGE_EXAMPLE}. \n\n Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff:`;
-    prompt += `\n\n${diff} \n\n If there are no changes, you must return "No changes".`;
+    const template = COMMIT_MESSAGE_TEMPLATE(this.options.language);
+
+    let prompt = `You are a professional Git commit message writer. \n`;
+
+    // 언어 설정에 따른 프롬프트 추가
+    if (this.options.language !== "en") {
+      prompt += `Please write the commit messages in ${this.options.language}. \n`;
+    }
+
+    prompt += `Write commit messages using the provided template and example. \n`;
+    prompt += `Template: ${template}. \n Example: ${COMMIT_MESSAGE_EXAMPLE}. \n\n`;
+    prompt += `Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff:`;
+    prompt += `\n\n${diff} \n\n`;
+    prompt += `If there are no changes, you must return "No changes".`;
+
     return prompt;
   }
 

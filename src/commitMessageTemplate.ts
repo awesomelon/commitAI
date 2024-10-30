@@ -1,4 +1,22 @@
-export const COMMIT_MESSAGE_TEMPLATE = `   
+interface LanguageSpecificInstructions {
+  [key: string]: string;
+}
+
+const LANGUAGE_INSTRUCTIONS: LanguageSpecificInstructions = {
+  en: "Write the commit message in English",
+  ko: "Write both the title and body in Korean. Follow the same format but use Korean language.",
+  ja: "Write both the title and body in Japanese. Follow the same format but use Japanese language.",
+  "zh-CN":
+    "Write both the title and body in Simplified Chinese. Follow the same format but use Chinese language.",
+  "zh-TW":
+    "Write both the title and body in Traditional Chinese. Follow the same format but use Chinese language.",
+};
+
+export const COMMIT_MESSAGE_TEMPLATE = (lang: string) => {
+  const languageInstruction =
+    LANGUAGE_INSTRUCTIONS[lang] || LANGUAGE_INSTRUCTIONS.en;
+
+  return `
    When writing commit messages, please adhere to the following guidelines to ensure clear, consistent, and informative version control:
 
     1. Subject Line:
@@ -32,9 +50,11 @@ export const COMMIT_MESSAGE_TEMPLATE = `
        - Ensure the reviewer can understand the reason for the change
        - Provide sufficient detail in the body, especially for complex issues
        - Use clear and concise language throughout the message
+       - ${languageInstruction}
 
     Remember, well-written commit messages are crucial for maintaining a clean and understandable version history. They help team members and future contributors quickly understand the purpose and impact of each change.  
 `;
+};
 
 export const COMMIT_MESSAGE_EXAMPLE = `   
     feat: Implement user authentication
