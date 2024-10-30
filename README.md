@@ -64,6 +64,26 @@ commit-ai -l zh-TW
 - zh-CN: Simplified Chinese 
 - zh-TW: Traditional Chinese
 
+**You can check your current configuration:**
+
+```
+commit-ai --show-config
+
+# Output example:
+Current Configuration:
+--------------------
+Default Language: ko
+API Key: Set
+
+Supported Languages:
+-------------------
+en
+ko (current)
+ja
+zh-CN
+zh-TW
+```
+
 ### Interactive Message Selection and Editing
 
 1. Select a commit message using arrow keys 
@@ -95,7 +115,8 @@ commit-ai -l zh-TW
 
 - `-k, --key <key>`: Set Anthropic API key
 - `-n, --number <number>`: Number of commit message suggestions to generate (default: 3)
-- `-l, --language <code>`: Language for commit messages (default: en)
+- `-l, --language <code>`: Set default language for commit messages
+- `--show-config`: Show current configuration
 
 
 ## Commit Message Format
