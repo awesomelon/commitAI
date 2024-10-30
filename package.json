@@ -4,7 +4,9 @@
   "description": "Automatically generate commit messages using AI",
   "type": "module",
   "main": "dist/index.js",
-  "exports": "./dist/cli.js",
+  "exports": {
+    ".": "./dist/cli.js"
+  },
   "bin": {
     "commit-ai": "./dist/cli.js"
   },
@@ -43,5 +45,8 @@
     "commander": "^12.1.0",
     "configstore": "^7.0.0",
     "ora": "^8.1.0"
+  },
+  "engines": {
+    "node": ">=14.16"
   }
 }
