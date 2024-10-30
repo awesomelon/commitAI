@@ -1,18 +1,19 @@
 # commit-ai
 
-commit-ai is a CLI tool that automatically generates Git commit messages using AI, now with support for custom commit message templates.
+commit-ai is a CLI tool that automatically generates Git commit messages using AI, leveraging Claude 3.5 to provide high-quality, standardized commit messages.
 
 ![example](./assets/example.gif)
 
 ## Key Features
 
-- Multiple commit message suggestions using AI
+- AI-powered commit message generation using Anthropic's Claude 3.5
+- Standardized commit message format following conventional commits
+- Multiple commit message suggestions with detailed explanations
 - Customizable message generation options
 - Easy-to-use CLI interface
 - Interactive commit message selection using arrow keys
 - Visual progress indication for commit message generation and commit process
-- Intelligent file filtering to exclude large files and specific file types (e.g., lock files)
-- Improved handling of file paths, including support for relative paths and paths starting with '~'
+- Intelligent file filtering to exclude large files and specific file types (e.g., lock files, SVG, source maps)
 
 ## Installation
 
@@ -39,8 +40,8 @@ commit-ai
 ### Options
 
 - `-k, --key <key>`: Set Anthropic API key
-- `-m, --max-tokens <number>`: Set max tokens for message generation (default: 300)
-- `-t, --temperature <number>`: Set temperature for message generation (default: 0.7)
+- `-m, --max-tokens <number>`: Set max tokens for message generation (default: 400)
+- `-t, --temperature <number>`: Set temperature for message generation (default: 0)
 - `-n, --number <number>`: Number of commit message suggestions to generate (default: 3)
 - `--max-file-size <number>`: Maximum file size in KB to include in diff (default: 100)
 
@@ -50,15 +51,40 @@ Example:
 commit-ai -n 5 -m 400 -t 0.8 --max-file-size 200
 ```
 
+## Commit Message Format
+
+commit-ai follows a standardized commit message format:
+
+1. Subject Line:
+   - Starts with a type (feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert)
+   - Uses imperative mood
+   - Limited to 50 characters
+   - Capitalized first word
+   - No period at the end
+
+2. Body Message:
+   - Provides context and reasoning for the change
+   - Limited to 72 characters per line
+   - Explains the impact and motivation
+   - Uses bullet points for multiple items
+
+```markdown
+feat: Implement user authentication
+
+Added user authentication to enhance app security:
+ - Integrated login and signup functionality
+ - Implemented JWT for session management
+ - Updated the database schema to store hashed passwords
+ - Added password recovery via email
+```
+
 ## How It Works
 
-1. Analyzes staged changes in the current Git repository, filtering out large files and specific file types
-2. Retrieves the Git commit template if available and requested
-3. Uses AI to generate multiple commit message candidates (with visual progress indication)
-4. Parses and processes the AI-generated commit messages
-5. Displays the list of generated messages
-6. Allows the user to select a message using arrow keys or cancel the commit
-7. Performs the Git commit with the selected message (with visual progress indication)
+1. Analyzes staged changes in the current Git repository 
+2. Filters out large files (configurable, default 100KB) and specific file types (package-lock.json, yarn.lock, pnpm-lock.yaml, .svg, .map)
+3. Uses Claude 3.5 to generate multiple commit message candidates based on the diff 
+4. Provides interactive selection of the generated messages 
+5. Commits the changes with the selected message
 
 ## Development
 
