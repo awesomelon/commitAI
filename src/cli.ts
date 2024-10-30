@@ -4,7 +4,7 @@ import { program } from "commander";
 import Configstore from "configstore";
 import { select, editor, confirm } from "@inquirer/prompts";
 import ora from "ora";
-import GitCommitMessageGenerator from "./GitCommitMessageGenerator.js";
+import { GitCommitMessageGenerator } from "./GitCommitMessageGenerator.js";
 
 const VERSION = "__VERSION__";
 const config = new Configstore("commit-ai");

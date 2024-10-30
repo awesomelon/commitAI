@@ -5,6 +5,9 @@ import {
   COMMIT_MESSAGE_TEMPLATE,
 } from "./commitMessageTemplate.js";
 
+const SUPPORTED_LANGUAGES = ["en", "ko", "ja", "zh-CN", "zh-TW"] as const;
+type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+
 interface GeneratorOptions {
   maxTokens?: number;
   temperature?: number;
@@ -21,23 +24,37 @@ interface CommitMessage {
 
 class GitCommitMessageGenerator {
   private anthropic: Anthropic;
-  private options: Required<GeneratorOptions>;
+  private options: Required<Omit<GeneratorOptions, "language">> & {
+    language: SupportedLanguage;
+  };
 
   constructor(apiKey: string, options: GeneratorOptions = {}) {
     this.anthropic = new Anthropic({ apiKey } as ClientOptions);
     this.options = this.initializeOptions(options);
   }
 
-  private initializeOptions(
-    options: GeneratorOptions,
-  ): Required<GeneratorOptions> {
+  private validateLanguage(lang: string): SupportedLanguage {
+    if (!lang || !SUPPORTED_LANGUAGES.includes(lang as SupportedLanguage)) {
+      console.warn(
+        `Language "${lang}" is not supported. Falling back to English (en).`,
+      );
+      return "en";
+    }
+    return lang as SupportedLanguage;
+  }
+
+  private initializeOptions(options: GeneratorOptions): Required<
+    Omit<GeneratorOptions, "language">
+  > & {
+    language: SupportedLanguage;
+  } {
     return {
       maxTokens: options.maxTokens || 400,
       temperature: options.temperature || 0,
       model: options.model || "claude-3-5-sonnet-20241022",
       numberOfSuggestions: options.numberOfSuggestions || 3,
       maxFileSizeKB: options.maxFileSizeKB || 100,
-      language: options.language || "en",
+      language: this.validateLanguage(options.language || "en"),
     };
   }
 
@@ -198,4 +215,8 @@ class GitCommitMessageGenerator {
   }
 }
 
-export default GitCommitMessageGenerator;
+export {
+  GitCommitMessageGenerator,
+  SUPPORTED_LANGUAGES,
+  type SupportedLanguage,
+};

@@ -9,12 +9,16 @@ import {
   COMMIT_MESSAGE_TEMPLATE,
 } from "./commitMessageTemplate.js";
 
+const SUPPORTED_LANGUAGES = ["en", "ko", "ja", "zh-CN", "zh-TW"] as const;
+type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+
 interface GeneratorOptions {
   maxTokens?: number;
   temperature?: number;
   model?: string;
   numberOfSuggestions?: number;
   maxFileSizeKB?: number;
+  language?: string;
 }
 
 interface CommitMessage {
@@ -24,22 +28,37 @@ interface CommitMessage {
 
 class GitCommitMessageGenerator {
   private anthropic: Anthropic;
-  private options: Required<GeneratorOptions>;
+  private options: Required<Omit<GeneratorOptions, "language">> & {
+    language: SupportedLanguage;
+  };
 
   constructor(apiKey: string, options: GeneratorOptions = {}) {
     this.anthropic = new Anthropic({ apiKey } as ClientOptions);
     this.options = this.initializeOptions(options);
   }
 
-  private initializeOptions(
-    options: GeneratorOptions,
-  ): Required<GeneratorOptions> {
+  private validateLanguage(lang: string): SupportedLanguage {
+    if (!lang || !SUPPORTED_LANGUAGES.includes(lang as SupportedLanguage)) {
+      console.warn(
+        `Language "${lang}" is not supported. Falling back to English (en).`,
+      );
+      return "en";
+    }
+    return lang as SupportedLanguage;
+  }
+
+  private initializeOptions(options: GeneratorOptions): Required<
+    Omit<GeneratorOptions, "language">
+  > & {
+    language: SupportedLanguage;
+  } {
     return {
       maxTokens: options.maxTokens || 400,
       temperature: options.temperature || 0,
-      model: options.model || "claude-3-5-sonnet-20240620",
+      model: options.model || "claude-3-5-sonnet-20241022",
       numberOfSuggestions: options.numberOfSuggestions || 3,
       maxFileSizeKB: options.maxFileSizeKB || 100,
+      language: this.validateLanguage(options.language || "en"),
     };
   }
 
@@ -126,8 +145,21 @@ class GitCommitMessageGenerator {
   }
 
   private buildPrompt(diff: string): string {
-    let prompt = `You are a professional Git commit message writer. \n Write commit messages using the provided template and example. \n Template: ${COMMIT_MESSAGE_TEMPLATE}. \n Example: ${COMMIT_MESSAGE_EXAMPLE}. \n\n Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff:`;
-    prompt += `\n\n${diff} \n\n If there are no changes, you must return "No changes".`;
+    const template = COMMIT_MESSAGE_TEMPLATE(this.options.language);
+
+    let prompt = `You are a professional Git commit message writer. \n`;
+
+    // 언어 설정에 따른 프롬프트 추가
+    if (this.options.language !== "en") {
+      prompt += `Please write the commit messages in ${this.options.language}. \n`;
+    }
+
+    prompt += `Write commit messages using the provided template and example. \n`;
+    prompt += `Template: ${template}. \n Example: ${COMMIT_MESSAGE_EXAMPLE}. \n\n`;
+    prompt += `Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff:`;
+    prompt += `\n\n${diff} \n\n`;
+    prompt += `If there are no changes, you must return "No changes".`;
+
     return prompt;
   }
 
@@ -187,39 +219,85 @@ class GitCommitMessageGenerator {
   }
 }
 
-export default GitCommitMessageGenerator;
+export {
+  GitCommitMessageGenerator,
+  SUPPORTED_LANGUAGES,
+  type SupportedLanguage,
+};
 ```
 
 ```ts
 /* ./src/cli.ts */
-import { program } from 'commander';
-import Configstore from 'configstore';
-import { select } from '@inquirer/prompts';
-import ora from 'ora';
-import GitCommitMessageGenerator from './GitCommitMessageGenerator.js';
+#!/usr/bin/env node
 
-const VERSION = '__VERSION__';
+import { program } from "commander";
+import Configstore from "configstore";
+import { select, editor, confirm } from "@inquirer/prompts";
+import ora from "ora";
+import { GitCommitMessageGenerator } from "./GitCommitMessageGenerator.js";
 
-const config = new Configstore('commit-ai');
+const VERSION = "__VERSION__";
+const config = new Configstore("commit-ai");
 
 async function saveApiKey(key: string) {
-  config.set('apiKey', key);
-  console.log('API key successfully saved.');
+  config.set("apiKey", key);
+  console.log("API key successfully saved.");
 }
 
 function getApiKey() {
-  const apiKey = config.get('apiKey');
+  const apiKey = config.get("apiKey");
   if (!apiKey) {
-    console.error('API key not set. Please set it using the --key option.');
+    console.error("API key not set. Please set it using the --key option.");
     return null;
   }
   return apiKey;
 }
 
-async function generateAndSelectCommitMessage(generator: GitCommitMessageGenerator) {
-  const spinner = ora('Generating commit messages...').start();
+async function editCommitMessage(message: any) {
+  const editTitle = await confirm({
+    message: "Would you like to edit the commit title?",
+    default: false,
+  });
+
+  let newTitle = message.title;
+  let newBody = message.body;
+
+  if (editTitle) {
+    newTitle = await editor({
+      message: "Edit commit title:",
+      default: message.title,
+      waitForUseInput: true,
+    });
+    newTitle = newTitle.trim();
+  }
+
+  const editBody = await confirm({
+    message: "Would you like to edit the commit body?",
+    default: false,
+  });
+
+  if (editBody) {
+    newBody = await editor({
+      message: "Edit commit body:",
+      default: message.body,
+      waitForUseInput: true,
+    });
+
+    newBody = newBody.trim();
+  }
+
+  return {
+    title: newTitle,
+    body: newBody,
+  };
+}
+
+async function generateAndSelectCommitMessage(
+  generator: GitCommitMessageGenerator,
+) {
+  const spinner = ora("Generating commit messages...").start();
   const commitMessages = await generator.generateCommitMessages();
-  spinner.succeed('Commit messages successfully generated.');
+  spinner.succeed("Commit messages successfully generated.");
 
   const choices = commitMessages.map((msg, index) => ({
     name: `${index + 1}. ${msg.title}`,
@@ -227,26 +305,44 @@ async function generateAndSelectCommitMessage(generator: GitCommitMessageGenerat
     description: `\n${msg.title}\n\n${msg.body}`,
   }));
 
-  return select({
-    message: 'Select a commit message to use',
-    choices: [...choices, { name: `🌟. Cancel`, value: null }],
+  const selectedMessage = await select({
+    message: "Select a commit message to use",
+    choices: [...choices, { name: "🌟 Cancel", value: null }],
   });
+
+  if (selectedMessage) {
+    const shouldEdit = await confirm({
+      message: "Would you like to edit this commit message?",
+      default: false,
+    });
+
+    if (shouldEdit) {
+      return await editCommitMessage(selectedMessage);
+    }
+  }
+
+  return selectedMessage;
 }
 
-async function commitChanges(generator: GitCommitMessageGenerator, message: any) {
-  const spinner = ora('Committing changes...').start();
+async function commitChanges(
+  generator: GitCommitMessageGenerator,
+  message: any,
+) {
+  const spinner = ora("Committing changes...").start();
   await generator.commitChanges(message);
-  spinner.succeed('Changes successfully committed!');
+  spinner.succeed("Changes successfully committed!");
 }
 
 program
   .version(VERSION)
-  .description('Automatically generate commit messages using AI')
-  .option('-k, --key <key>', 'Set Anthropic API key')
-  .option('-m, --max-tokens <number>', 'Set max tokens for message generation', '300')
-  .option('-t, --temperature <number>', 'Set temperature for message generation', '0.7')
-  .option('-n, --number <number>', 'Number of commit message suggestions', '3')
-  .option('--max-file-size <number>', 'Maximum file size in KB to include in diff', '100')
+  .description("Automatically generate commit messages using AI")
+  .option("-k, --key <key>", "Set Anthropic API key")
+  .option("-n, --number <number>", "Number of commit message suggestions", "3")
+  .option(
+    "-l, --language <code>",
+    "Language for commit messages (e.g., en, ko, ja)",
+    "en",
+  )
   .action(async (options) => {
     if (options.key) {
       await saveApiKey(options.key);
@@ -257,10 +353,8 @@ program
     if (!apiKey) return;
 
     const generator = new GitCommitMessageGenerator(apiKey, {
-      maxTokens: parseInt(options.maxTokens),
-      temperature: parseFloat(options.temperature),
       numberOfSuggestions: parseInt(options.number),
-      maxFileSizeKB: parseInt(options.maxFileSize),
+      language: options.language,
     });
 
     try {
@@ -269,10 +363,10 @@ program
       if (selectedMessage) {
         await commitChanges(generator, selectedMessage);
       } else {
-        console.log('Commit cancelled by user.');
+        console.log("Commit cancelled by user.");
       }
     } catch (error) {
-      console.error('Error:', (error as Error).message);
+      console.error("Error:", (error as Error).message);
     }
   });
 
@@ -281,7 +375,25 @@ program.parse(process.argv);
 
 ```ts
 /* ./src/commitMessageTemplate.ts */
-export const COMMIT_MESSAGE_TEMPLATE = `   
+interface LanguageSpecificInstructions {
+  [key: string]: string;
+}
+
+const LANGUAGE_INSTRUCTIONS: LanguageSpecificInstructions = {
+  en: "Write the commit message in English",
+  ko: "Write both the title and body in Korean. Follow the same format but use Korean language.",
+  ja: "Write both the title and body in Japanese. Follow the same format but use Japanese language.",
+  "zh-CN":
+    "Write both the title and body in Simplified Chinese. Follow the same format but use Chinese language.",
+  "zh-TW":
+    "Write both the title and body in Traditional Chinese. Follow the same format but use Chinese language.",
+};
+
+export const COMMIT_MESSAGE_TEMPLATE = (lang: string) => {
+  const languageInstruction =
+    LANGUAGE_INSTRUCTIONS[lang] || LANGUAGE_INSTRUCTIONS.en;
+
+  return `
    When writing commit messages, please adhere to the following guidelines to ensure clear, consistent, and informative version control:
 
     1. Subject Line:
@@ -315,9 +427,11 @@ export const COMMIT_MESSAGE_TEMPLATE = `
        - Ensure the reviewer can understand the reason for the change
        - Provide sufficient detail in the body, especially for complex issues
        - Use clear and concise language throughout the message
+       - ${languageInstruction}
 
     Remember, well-written commit messages are crucial for maintaining a clean and understandable version history. They help team members and future contributors quickly understand the purpose and impact of each change.  
 `;
+};
 
 export const COMMIT_MESSAGE_EXAMPLE = `   
     feat: Implement user authentication

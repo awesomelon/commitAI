@@ -7,6 +7,7 @@ commit-ai is a CLI tool that automatically generates Git commit messages using A
 ## Key Features
 
 - AI-powered commit message generation using Anthropic's Claude 3.5
+- Multi-language support (English, Korean, Japanese, Simplified Chinese, Traditional Chinese)
 - Standardized commit message format following conventional commits
 - Multiple commit message suggestions with detailed explanations
 - Interactive commit message editing with your system's default editor
@@ -37,6 +38,31 @@ To generate a commit message, simply run:
 ```
 commit-ai
 ```
+
+### Multi-language Support
+
+You can generate commit messages in different languages using the -l or --language option:
+
+```
+# Generate commit messages in Korean
+commit-ai -l ko
+
+# Generate commit messages in Japanese
+commit-ai -l ja
+
+# Generate commit messages in Simplified Chinese
+commit-ai -l zh-CN
+
+# Generate commit messages in Traditional Chinese
+commit-ai -l zh-TW
+```
+
+**Supported languages:**
+- en: English (default)
+- ko: Korean 
+- ja: Japanese 
+- zh-CN: Simplified Chinese 
+- zh-TW: Traditional Chinese
 
 ### Interactive Message Selection and Editing
 
@@ -69,6 +95,7 @@ commit-ai
 
 - `-k, --key <key>`: Set Anthropic API key
 - `-n, --number <number>`: Number of commit message suggestions to generate (default: 3)
+- `-l, --language <code>`: Language for commit messages (default: en)
 
 
 ## Commit Message Format
