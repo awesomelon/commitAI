@@ -9,6 +9,7 @@ commit-ai is a CLI tool that automatically generates Git commit messages using A
 - AI-powered commit message generation using Anthropic's Claude 3.5
 - Standardized commit message format following conventional commits
 - Multiple commit message suggestions with detailed explanations
+- Interactive commit message editing with your system's default editor
 - Customizable message generation options
 - Easy-to-use CLI interface
 - Interactive commit message selection using arrow keys
@@ -37,19 +38,38 @@ To generate a commit message, simply run:
 commit-ai
 ```
 
+### Interactive Message Selection and Editing
+
+1. Select a commit message using arrow keys 
+2. Choose to edit the selected message (optional)
+3. Edit title and/or body in your system's default text editor 
+4. Review and confirm your changes 
+5. Commit with the final message
+
+```markdown
+# Example workflow:
+> Select a commit message to use
+  1. feat: Add user authentication
+  2. feat: Implement login functionality
+  3. feat: Create authentication system
+  ✏️  Edit commit message
+  🌟 Cancel
+
+# If you choose to edit:
+> Would you like to edit the commit title? (y/N)
+# Your default editor opens with the current title
+
+> Would you like to edit the commit body? (y/N)
+# Your default editor opens with the current body
+
+# Review your changes before confirming
+```
+
 ### Options
 
 - `-k, --key <key>`: Set Anthropic API key
-- `-m, --max-tokens <number>`: Set max tokens for message generation (default: 400)
-- `-t, --temperature <number>`: Set temperature for message generation (default: 0)
 - `-n, --number <number>`: Number of commit message suggestions to generate (default: 3)
-- `--max-file-size <number>`: Maximum file size in KB to include in diff (default: 100)
 
-Example:
-
-```
-commit-ai -n 5 -m 400 -t 0.8 --max-file-size 200
-```
 
 ## Commit Message Format
 

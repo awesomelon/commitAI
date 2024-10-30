@@ -2,12 +2,11 @@
 
 import { program } from "commander";
 import Configstore from "configstore";
-import { select } from "@inquirer/prompts";
+import { select, editor, confirm } from "@inquirer/prompts";
 import ora from "ora";
 import GitCommitMessageGenerator from "./GitCommitMessageGenerator.js";
 
 const VERSION = "__VERSION__";
-
 const config = new Configstore("commit-ai");
 
 async function saveApiKey(key: string) {
@@ -24,6 +23,45 @@ function getApiKey() {
   return apiKey;
 }
 
+async function editCommitMessage(message: any) {
+  const editTitle = await confirm({
+    message: "Would you like to edit the commit title?",
+    default: false,
+  });
+
+  let newTitle = message.title;
+  let newBody = message.body;
+
+  if (editTitle) {
+    newTitle = await editor({
+      message: "Edit commit title:",
+      default: message.title,
+      waitForUseInput: true,
+    });
+    newTitle = newTitle.trim();
+  }
+
+  const editBody = await confirm({
+    message: "Would you like to edit the commit body?",
+    default: false,
+  });
+
+  if (editBody) {
+    newBody = await editor({
+      message: "Edit commit body:",
+      default: message.body,
+      waitForUseInput: true,
+    });
+
+    newBody = newBody.trim();
+  }
+
+  return {
+    title: newTitle,
+    body: newBody,
+  };
+}
+
 async function generateAndSelectCommitMessage(
   generator: GitCommitMessageGenerator,
 ) {
@@ -37,10 +75,23 @@ async function generateAndSelectCommitMessage(
     description: `\n${msg.title}\n\n${msg.body}`,
   }));
 
-  return select({
+  const selectedMessage = await select({
     message: "Select a commit message to use",
-    choices: [...choices, { name: `🌟. Cancel`, value: null }],
+    choices: [...choices, { name: "🌟 Cancel", value: null }],
   });
+
+  if (selectedMessage) {
+    const shouldEdit = await confirm({
+      message: "Would you like to edit this commit message?",
+      default: false,
+    });
+
+    if (shouldEdit) {
+      return await editCommitMessage(selectedMessage);
+    }
+  }
+
+  return selectedMessage;
 }
 
 async function commitChanges(
@@ -56,22 +107,7 @@ program
   .version(VERSION)
   .description("Automatically generate commit messages using AI")
   .option("-k, --key <key>", "Set Anthropic API key")
-  .option(
-    "-m, --max-tokens <number>",
-    "Set max tokens for message generation",
-    "300",
-  )
-  .option(
-    "-t, --temperature <number>",
-    "Set temperature for message generation",
-    "0.7",
-  )
   .option("-n, --number <number>", "Number of commit message suggestions", "3")
-  .option(
-    "--max-file-size <number>",
-    "Maximum file size in KB to include in diff",
-    "100",
-  )
   .action(async (options) => {
     if (options.key) {
       await saveApiKey(options.key);
@@ -82,10 +118,7 @@ program
     if (!apiKey) return;
 
     const generator = new GitCommitMessageGenerator(apiKey, {
-      maxTokens: parseInt(options.maxTokens),
-      temperature: parseFloat(options.temperature),
       numberOfSuggestions: parseInt(options.number),
-      maxFileSizeKB: parseInt(options.maxFileSize),
     });
 
     try {
