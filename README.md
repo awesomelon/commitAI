@@ -27,46 +27,19 @@ npm install -g @j-ho/commit-ai
 
 ## Usage
 
-Before using commit-ai, you need to set up your Anthropic API key:
+### Initial Setup
+
+You can set your Anthropic API key and preferred language either separately or together:
 
 ```
+# Set both API key and language at once
+commit-ai --key YOUR_API_KEY --language ko
+
+# Or set them separately
 commit-ai --key YOUR_API_KEY
-```
+commit-ai --language ja
 
-To generate a commit message, simply run:
-
-```
-commit-ai
-```
-
-### Multi-language Support
-
-You can generate commit messages in different languages using the -l or --language option:
-
-```
-# Generate commit messages in Korean
-commit-ai -l ko
-
-# Generate commit messages in Japanese
-commit-ai -l ja
-
-# Generate commit messages in Simplified Chinese
-commit-ai -l zh-CN
-
-# Generate commit messages in Traditional Chinese
-commit-ai -l zh-TW
-```
-
-**Supported languages:**
-- en: English (default)
-- ko: Korean 
-- ja: Japanese 
-- zh-CN: Simplified Chinese 
-- zh-TW: Traditional Chinese
-
-**You can check your current configuration:**
-
-```
+# Check your current configuration
 commit-ai --show-config
 
 # Output example:
@@ -83,6 +56,37 @@ ja
 zh-CN
 zh-TW
 ```
+
+### Generating Commit Messages
+
+To generate a commit message using your stored settings, simply run:
+
+```
+commit-ai
+```
+
+You can override the stored language for a single commit:
+
+```
+commit-ai -l ko  # Use Korean for this commit only
+```
+
+### Multi-language Support
+
+Supported languages:
+- en: English (default)
+- ko: Korean 
+- ja: Japanese 
+- zh-CN: Simplified Chinese 
+- zh-TW: Traditional Chinese
+
+### Options
+
+- `-k, --key <key>`: Set Anthropic API key
+- `-n, --number <number>`: Number of commit message suggestions to generate (default: 3)
+- `-l, --language <code>`: Set default language for commit messages
+- `--show-config`: Show current configuration
+
 
 ### Interactive Message Selection and Editing
 
@@ -110,14 +114,6 @@ zh-TW
 
 # Review your changes before confirming
 ```
-
-### Options
-
-- `-k, --key <key>`: Set Anthropic API key
-- `-n, --number <number>`: Number of commit message suggestions to generate (default: 3)
-- `-l, --language <code>`: Set default language for commit messages
-- `--show-config`: Show current configuration
-
 
 ## Commit Message Format
 
