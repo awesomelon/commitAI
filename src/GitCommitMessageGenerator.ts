@@ -62,7 +62,6 @@ class GitCommitMessageGenerator {
     try {
       const diff = this.getGitDiff();
       const response = await this.callClaudeAPI(diff);
-      console.log("response.content[0].text", response.content[0].text);
       return this.parseCommitMessages(response.content[0].text);
     } catch (error) {
       console.error(

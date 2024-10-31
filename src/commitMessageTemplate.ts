@@ -16,8 +16,6 @@ export const COMMIT_MESSAGE_TEMPLATE = (lang: string) => {
   const languageInstruction =
     LANGUAGE_INSTRUCTIONS[lang] || LANGUAGE_INSTRUCTIONS.en;
 
-  console.log(languageInstruction);
-
   return `You are a commit message generator.
 Types: feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert
 Rules:
