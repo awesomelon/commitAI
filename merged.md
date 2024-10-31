@@ -133,6 +133,7 @@ class GitCommitMessageGenerator {
   private async callClaudeAPI(diff: string): Promise<any> {
     try {
       const prompt = this.buildPrompt(diff);
+
       return await this.anthropic.messages.create({
         model: this.options.model,
         max_tokens: this.options.maxTokens,
@@ -148,12 +149,6 @@ class GitCommitMessageGenerator {
     const template = COMMIT_MESSAGE_TEMPLATE(this.options.language);
 
     let prompt = `You are a professional Git commit message writer. \n`;
-
-    // 언어 설정에 따른 프롬프트 추가
-    if (this.options.language !== "en") {
-      prompt += `Please write the commit messages in ${this.options.language}. \n`;
-    }
-
     prompt += `Write commit messages using the provided template and example. \n`;
     prompt += `Template: ${template}. \n Example: ${COMMIT_MESSAGE_EXAMPLE}. \n\n`;
     prompt += `Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff:`;
@@ -234,14 +229,46 @@ import { program } from "commander";
 import Configstore from "configstore";
 import { select, editor, confirm } from "@inquirer/prompts";
 import ora from "ora";
-import { GitCommitMessageGenerator } from "./GitCommitMessageGenerator.js";
+import {
+  GitCommitMessageGenerator,
+  SUPPORTED_LANGUAGES,
+} from "./GitCommitMessageGenerator.js";
 
 const VERSION = "__VERSION__";
 const config = new Configstore("commit-ai");
 
-async function saveApiKey(key: string) {
-  config.set("apiKey", key);
-  console.log("API key successfully saved.");
+async function saveConfig(options: { key?: string; language?: string }) {
+  let configChanged = false;
+  let messages: string[] = [];
+
+  if (options.key) {
+    config.set("apiKey", options.key);
+    messages.push("API key successfully saved");
+    configChanged = true;
+  }
+
+  if (options.language) {
+    if (!SUPPORTED_LANGUAGES.includes(options.language as any)) {
+      console.error(
+        `Language "${options.language}" is not supported. Supported languages are: ${SUPPORTED_LANGUAGES.join(", ")}`,
+      );
+    } else {
+      config.set("language", options.language);
+      messages.push(`Default language set to: ${options.language}`);
+      configChanged = true;
+    }
+  }
+
+  if (configChanged) {
+    console.log("\nConfiguration updated:");
+    messages.forEach((msg) => console.log(`✓ ${msg}`));
+
+    // Show current config after update
+    console.log("\nCurrent Configuration:");
+    console.log("--------------------");
+    console.log(`Default Language: ${getLanguage()}`);
+    console.log(`API Key: ${config.get("apiKey") ? "Set" : "Not Set"}`);
+  }
 }
 
 function getApiKey() {
@@ -251,6 +278,23 @@ function getApiKey() {
     return null;
   }
   return apiKey;
+}
+
+function getLanguage(): string {
+  return config.get("language") || "en";
+}
+
+function showConfig() {
+  const currentLang = getLanguage();
+  console.log("\nCurrent Configuration:");
+  console.log("--------------------");
+  console.log(`Default Language: ${currentLang}`);
+  console.log(`API Key: ${config.get("apiKey") ? "Set" : "Not Set"}`);
+  console.log("\nSupported Languages:");
+  console.log("-------------------");
+  SUPPORTED_LANGUAGES.forEach((lang) => {
+    console.log(`${lang}${lang === currentLang ? " (current)" : ""}`);
+  });
 }
 
 async function editCommitMessage(message: any) {
@@ -340,12 +384,20 @@ program
   .option("-n, --number <number>", "Number of commit message suggestions", "3")
   .option(
     "-l, --language <code>",
-    "Language for commit messages (e.g., en, ko, ja)",
-    "en",
+    "Set default language for commit messages (e.g., en, ko, ja)",
   )
+  .option("--show-config", "Show current configuration")
   .action(async (options) => {
-    if (options.key) {
-      await saveApiKey(options.key);
+    if (options.key || options.language) {
+      await saveConfig({
+        key: options.key,
+        language: options.language,
+      });
+      return;
+    }
+
+    if (options.showConfig) {
+      showConfig();
       return;
     }
 
@@ -354,7 +406,7 @@ program
 
     const generator = new GitCommitMessageGenerator(apiKey, {
       numberOfSuggestions: parseInt(options.number),
-      language: options.language,
+      language: getLanguage(),
     });
 
     try {

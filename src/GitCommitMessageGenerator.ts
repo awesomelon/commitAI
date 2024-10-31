@@ -129,6 +129,7 @@ class GitCommitMessageGenerator {
   private async callClaudeAPI(diff: string): Promise<any> {
     try {
       const prompt = this.buildPrompt(diff);
+
       return await this.anthropic.messages.create({
         model: this.options.model,
         max_tokens: this.options.maxTokens,
@@ -143,51 +144,49 @@ class GitCommitMessageGenerator {
   private buildPrompt(diff: string): string {
     const template = COMMIT_MESSAGE_TEMPLATE(this.options.language);
 
-    let prompt = `You are a professional Git commit message writer. \n`;
+    console.log(template);
 
-    // 언어 설정에 따른 프롬프트 추가
-    if (this.options.language !== "en") {
-      prompt += `Please write the commit messages in ${this.options.language}. \n`;
-    }
-
-    prompt += `Write commit messages using the provided template and example. \n`;
-    prompt += `Template: ${template}. \n Example: ${COMMIT_MESSAGE_EXAMPLE}. \n\n`;
-    prompt += `Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff:`;
-    prompt += `\n\n${diff} \n\n`;
-    prompt += `If there are no changes, you must return "No changes".`;
-
-    return prompt;
+    return `
+        You are a professional Git commit message writer. \n
+        Write commit messages using the provided template and example. \n
+        Template: ${template} \n
+        Example: ${COMMIT_MESSAGE_EXAMPLE} \n\n 
+        
+        Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff: \n      
+        ${diff} \n
+        
+        If there are no changes, you must return "No changes".`;
   }
 
   parseCommitMessages(response: string): CommitMessage[] {
-    const lines = response.split("\n");
-    const commitMessages: CommitMessage[] = [];
-    let currentMessage: string[] = [];
+    const cleanResponse = response
+      .replace(/```\w*\n?/g, "")
+      .replace(/^\s+|\s+$/g, "");
 
-    for (const line of lines) {
-      const match = line.match(/^\d+\.\s*(.+)$/);
-      if (match) {
-        if (currentMessage.length > 0) {
-          commitMessages.push(this.createCommitMessage(currentMessage));
-          currentMessage = [];
+    const messages: CommitMessage[] = [];
+    const messageBlocks = cleanResponse.split(/\n\s*\n(?=\d+\.)/);
+
+    for (const block of messageBlocks) {
+      const lines = block
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+      const titleMatch = lines[0]?.match(/^\d+\.\s*(.+)$/);
+
+      if (titleMatch) {
+        const title = titleMatch[1]
+          .replace(/^["']/, "")
+          .replace(/["']$/, "")
+          .trim();
+        const body = lines.slice(1).join("\n").trim();
+
+        if (title) {
+          messages.push({ title, body });
         }
-        currentMessage.push(match[1].replace(/^"|"$/g, "").trim());
-      } else if (currentMessage.length > 0 && line.trim()) {
-        currentMessage.push(line.trim());
       }
     }
 
-    if (currentMessage.length > 0) {
-      commitMessages.push(this.createCommitMessage(currentMessage));
-    }
-
-    return commitMessages;
-  }
-
-  private createCommitMessage(lines: string[]): CommitMessage {
-    const title = lines[0];
-    const body = lines.slice(1).join("\n").trim();
-    return { title, body };
+    return messages;
   }
 
   async commitChanges(message: CommitMessage): Promise<void> {

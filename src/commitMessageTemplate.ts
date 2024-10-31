@@ -3,13 +3,11 @@ interface LanguageSpecificInstructions {
 }
 
 const LANGUAGE_INSTRUCTIONS: LanguageSpecificInstructions = {
-  en: "Write the commit message in English",
-  ko: "Write both the title and body in Korean. Follow the same format but use Korean language.",
-  ja: "Write both the title and body in Japanese. Follow the same format but use Japanese language.",
-  "zh-CN":
-    "Write both the title and body in Simplified Chinese. Follow the same format but use Chinese language.",
-  "zh-TW":
-    "Write both the title and body in Traditional Chinese. Follow the same format but use Chinese language.",
+  en: "Must be Write the commit message in English",
+  ko: "Must be Write both the title and body in Korean.",
+  ja: "Must be Write both the title and body in Japanese.",
+  "zh-CN": "Must be Write both the title and body in Simplified Chinese.",
+  "zh-TW": "Must be Write both the title and body in Traditional Chinese.",
 };
 
 export const COMMIT_MESSAGE_TEMPLATE = (lang: string) => {
