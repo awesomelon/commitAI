@@ -49,7 +49,7 @@ class GitCommitMessageGenerator {
     language: SupportedLanguage;
   } {
     return {
-      maxTokens: options.maxTokens || 400,
+      maxTokens: options.maxTokens || 500,
       temperature: options.temperature || 0,
       model: options.model || "claude-3-5-sonnet-20241022",
       numberOfSuggestions: options.numberOfSuggestions || 3,
@@ -62,6 +62,7 @@ class GitCommitMessageGenerator {
     try {
       const diff = this.getGitDiff();
       const response = await this.callClaudeAPI(diff);
+      console.log("response.content[0].text", response.content[0].text);
       return this.parseCommitMessages(response.content[0].text);
     } catch (error) {
       console.error(
@@ -81,7 +82,9 @@ class GitCommitMessageGenerator {
   }
 
   private getStagedFiles(): string[] {
-    return execSync("git diff --cached --name-only")
+    return execSync("git diff --staged --name-only", {
+      encoding: "utf8",
+    })
       .toString()
       .split("\n")
       .filter(Boolean);
@@ -104,7 +107,9 @@ class GitCommitMessageGenerator {
   }
 
   private getFileDiff(file: string): string {
-    return execSync(`git diff --cached -- "${file}"`).toString();
+    return execSync(`git diff --staged -- "${file}"`, {
+      encoding: "utf8",
+    }).toString();
   }
 
   private isFileTooLarge(fileDiff: string): boolean {
@@ -143,7 +148,6 @@ class GitCommitMessageGenerator {
 
   private buildPrompt(diff: string): string {
     const template = COMMIT_MESSAGE_TEMPLATE(this.options.language);
-
     return `
         You are a professional Git commit message writer. \n
         Write commit messages using the provided template and example. \n
@@ -197,7 +201,9 @@ class GitCommitMessageGenerator {
   }
 
   private validateStagedChanges(): void {
-    const stagedChanges = execSync("git diff --cached --name-only")
+    const stagedChanges = execSync("git diff --staged --name-only", {
+      encoding: "utf8",
+    })
       .toString()
       .trim();
     if (!stagedChanges) {
@@ -208,7 +214,7 @@ class GitCommitMessageGenerator {
   private executeGitCommit(message: CommitMessage): void {
     const fullMessage = `${message.title}\n\n${message.body}`;
     const escapedMessage = fullMessage.replace(/"/g, '\\"');
-    execSync(`git commit -m "${escapedMessage}"`);
+    execSync(`git commit -m "${escapedMessage}"`, { encoding: "utf8" });
   }
 }
 
