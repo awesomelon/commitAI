@@ -89,7 +89,7 @@ describe("GitCommitMessageGenerator", () => {
           messages: [
             expect.objectContaining({
               content: expect.stringContaining(
-                "Write both the title and body in Korean",
+                "Format: {type}: {Generate the title in Korean} + empty line + {Generate the body in Korean}",
               ),
             }),
           ],
@@ -115,7 +115,7 @@ describe("GitCommitMessageGenerator", () => {
           messages: [
             expect.objectContaining({
               content: expect.stringContaining(
-                "Write the commit message in English",
+                "Format: {type}: {Generate the title in English} + empty line + {Generate the body in English}",
               ),
             }),
           ],
