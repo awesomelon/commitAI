@@ -144,8 +144,6 @@ class GitCommitMessageGenerator {
   private buildPrompt(diff: string): string {
     const template = COMMIT_MESSAGE_TEMPLATE(this.options.language);
 
-    console.log(template);
-
     return `
         You are a professional Git commit message writer. \n
         Write commit messages using the provided template and example. \n
