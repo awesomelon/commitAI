@@ -22,11 +22,13 @@ describe("GitCommitMessageGenerator", () => {
   >;
   let generator: GitCommitMessageGenerator;
   let consoleWarnSpy: jest.SpyInstance;
+  let consoleErrorSpy: jest.SpyInstance;
 
   beforeEach(() => {
     generator = new GitCommitMessageGenerator("fake-api-key");
     jest.clearAllMocks();
     consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation();
+    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
   });
 
   afterEach(() => {
@@ -281,11 +283,13 @@ describe("GitCommitMessageGenerator", () => {
       ]);
     });
 
-    test("handles empty array response", () => {
+    test("handles empty array JSON response", () => {
       const generator = new GitCommitMessageGenerator("fake-api-key", {
         language: "en",
       });
-      const response = JSON.stringify([]);
+      const response = `\`\`\`json
+      []
+      \`\`\``;
 
       const result = (generator as any).parseCommitMessages(response);
 
@@ -296,40 +300,102 @@ describe("GitCommitMessageGenerator", () => {
       const generator = new GitCommitMessageGenerator("fake-api-key", {
         language: "en",
       });
-      const invalidResponse = "Invalid JSON";
-
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+      const invalidResponse = `\`\`\`json
+      Invalid JSON
+      \`\`\``;
 
       const result = (generator as any).parseCommitMessages(invalidResponse);
 
       expect(result).toEqual([]);
-      expect(consoleErrorSpy).toHaveBeenCalled();
-
-      consoleErrorSpy.mockRestore();
+      expect(consoleWarnSpy).toHaveBeenCalled();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "번호 매기기 형식 파싱에도 실패했습니다.",
+      );
     });
 
     test("handles non-array JSON response gracefully", () => {
       const generator = new GitCommitMessageGenerator("fake-api-key", {
         language: "en",
       });
-      const invalidJsonResponse = JSON.stringify({
-        title: "Single Title",
-        body: "Single Body",
-      });
-
-      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+      const invalidJsonResponse = `\`\`\`json
+      { "title": "Single Title", "body": "Single Body" }
+      \`\`\``;
 
       const result = (generator as any).parseCommitMessages(
         invalidJsonResponse,
       );
 
       expect(result).toEqual([]);
+      expect(consoleWarnSpy).toHaveBeenCalled();
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "커밋 메시지 파싱 실패:",
-        expect.any(Error),
+        "번호 매기기 형식 파싱에도 실패했습니다.",
       );
-
-      consoleErrorSpy.mockRestore();
     });
+  });
+
+  test("handles non-code block JSON response gracefully", () => {
+    const generator = new GitCommitMessageGenerator("fake-api-key", {
+      language: "en",
+    });
+    const response = JSON.stringify([
+      {
+        title: "feat: Add authentication",
+        body: "Implement secure login flow\n- Add JWT token management\n- Create password reset feature",
+      },
+    ]);
+
+    const result = (generator as any).parseCommitMessages(response);
+
+    expect(result).toEqual([
+      {
+        title: "feat: Add authentication",
+        body: "Implement secure login flow\n- Add JWT token management\n- Create password reset feature",
+      },
+    ]);
+  });
+
+  test("handles numbered list without code blocks", () => {
+    const generator = new GitCommitMessageGenerator("fake-api-key", {
+      language: "en",
+    });
+    const response = `
+1. refactor: Improve commit message parsing and error handling
+
+- Refactor parseCommitMessages to use JSON format
+- Add better error handling and validation
+- Update error messages to Korean
+- Improve response format consistency
+
+2. fix: Update git diff command flags
+
+- Replace --cached with --staged for consistency
+- Add UTF-8 encoding option to git commands
+- Fix file encoding issues in git operations
+- Improve diff command reliability
+
+3. style: Clean up code formatting and template structure
+
+- Reorganize commit message template structure
+- Improve code readability with consistent formatting
+- Update example commit message format
+- Streamline language instruction templates
+      `;
+
+    const result = (generator as any).parseCommitMessages(response);
+
+    expect(result).toEqual([
+      {
+        title: "refactor: Improve commit message parsing and error handling",
+        body: "- Refactor parseCommitMessages to use JSON format\n- Add better error handling and validation\n- Update error messages to Korean\n- Improve response format consistency",
+      },
+      {
+        title: "fix: Update git diff command flags",
+        body: "- Replace --cached with --staged for consistency\n- Add UTF-8 encoding option to git commands\n- Fix file encoding issues in git operations\n- Improve diff command reliability",
+      },
+      {
+        title: "style: Clean up code formatting and template structure",
+        body: "- Reorganize commit message template structure\n- Improve code readability with consistent formatting\n- Update example commit message format\n- Streamline language instruction templates",
+      },
+    ]);
   });
 });
