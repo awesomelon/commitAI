@@ -14,6 +14,9 @@ importers:
       '@inquirer/prompts':
         specifier: ^5.3.8
         version: 5.3.8
+      '@j-ho/commit-ai':
+        specifier: 'link:'
+        version: 'link:'
       commander:
         specifier: ^12.1.0
         version: 12.1.0

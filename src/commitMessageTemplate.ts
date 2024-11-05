@@ -27,9 +27,10 @@ Rules:
 Generate commit messages for this diff. Messages only, no explanations.`;
 };
 
-export const COMMIT_MESSAGE_EXAMPLE = `feat: Add user authentication system
+export const COMMIT_MESSAGE_EXAMPLE = `
+feat: Add user authentication system\n
 
-- Implement secure login flow
-- Add JWT token management
-- Create password reset feature
-- Set up email verification`;
+- Implement secure login flow\n
+- Add JWT token management\n
+- Create password reset feature\n
+- Set up email verification\n`;

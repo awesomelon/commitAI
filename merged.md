@@ -53,7 +53,7 @@ class GitCommitMessageGenerator {
     language: SupportedLanguage;
   } {
     return {
-      maxTokens: options.maxTokens || 400,
+      maxTokens: options.maxTokens || 500,
       temperature: options.temperature || 0,
       model: options.model || "claude-3-5-sonnet-20241022",
       numberOfSuggestions: options.numberOfSuggestions || 3,
@@ -85,7 +85,9 @@ class GitCommitMessageGenerator {
   }
 
   private getStagedFiles(): string[] {
-    return execSync("git diff --cached --name-only")
+    return execSync("git diff --staged --name-only", {
+      encoding: "utf8",
+    })
       .toString()
       .split("\n")
       .filter(Boolean);
@@ -108,7 +110,9 @@ class GitCommitMessageGenerator {
   }
 
   private getFileDiff(file: string): string {
-    return execSync(`git diff --cached -- "${file}"`).toString();
+    return execSync(`git diff --staged -- "${file}"`, {
+      encoding: "utf8",
+    }).toString();
   }
 
   private isFileTooLarge(fileDiff: string): boolean {
@@ -147,46 +151,47 @@ class GitCommitMessageGenerator {
 
   private buildPrompt(diff: string): string {
     const template = COMMIT_MESSAGE_TEMPLATE(this.options.language);
-
-    let prompt = `You are a professional Git commit message writer. \n`;
-    prompt += `Write commit messages using the provided template and example. \n`;
-    prompt += `Template: ${template}. \n Example: ${COMMIT_MESSAGE_EXAMPLE}. \n\n`;
-    prompt += `Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff:`;
-    prompt += `\n\n${diff} \n\n`;
-    prompt += `If there are no changes, you must return "No changes".`;
-
-    return prompt;
+    return `
+        You are a professional Git commit message writer. \n
+        Write commit messages using the provided template and example. \n
+        Template: ${template} \n
+        Example: ${COMMIT_MESSAGE_EXAMPLE} \n\n 
+        
+        Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff: \n      
+        ${diff} \n
+        
+        If there are no changes, you must return "No changes".`;
   }
 
   parseCommitMessages(response: string): CommitMessage[] {
-    const lines = response.split("\n");
-    const commitMessages: CommitMessage[] = [];
-    let currentMessage: string[] = [];
+    const cleanResponse = response
+      .replace(/```\w*\n?/g, "")
+      .replace(/^\s+|\s+$/g, "");
 
-    for (const line of lines) {
-      const match = line.match(/^\d+\.\s*(.+)$/);
-      if (match) {
-        if (currentMessage.length > 0) {
-          commitMessages.push(this.createCommitMessage(currentMessage));
-          currentMessage = [];
+    const messages: CommitMessage[] = [];
+    const messageBlocks = cleanResponse.split(/\n\s*\n(?=\d+\.)/);
+
+    for (const block of messageBlocks) {
+      const lines = block
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean);
+      const titleMatch = lines[0]?.match(/^\d+\.\s*(.+)$/);
+
+      if (titleMatch) {
+        const title = titleMatch[1]
+          .replace(/^["']/, "")
+          .replace(/["']$/, "")
+          .trim();
+        const body = lines.slice(1).join("\n").trim();
+
+        if (title) {
+          messages.push({ title, body });
         }
-        currentMessage.push(match[1].replace(/^"|"$/g, "").trim());
-      } else if (currentMessage.length > 0 && line.trim()) {
-        currentMessage.push(line.trim());
       }
     }
 
-    if (currentMessage.length > 0) {
-      commitMessages.push(this.createCommitMessage(currentMessage));
-    }
-
-    return commitMessages;
-  }
-
-  private createCommitMessage(lines: string[]): CommitMessage {
-    const title = lines[0];
-    const body = lines.slice(1).join("\n").trim();
-    return { title, body };
+    return messages;
   }
 
   async commitChanges(message: CommitMessage): Promise<void> {
@@ -199,7 +204,9 @@ class GitCommitMessageGenerator {
   }
 
   private validateStagedChanges(): void {
-    const stagedChanges = execSync("git diff --cached --name-only")
+    const stagedChanges = execSync("git diff --staged --name-only", {
+      encoding: "utf8",
+    })
       .toString()
       .trim();
     if (!stagedChanges) {
@@ -210,7 +217,7 @@ class GitCommitMessageGenerator {
   private executeGitCommit(message: CommitMessage): void {
     const fullMessage = `${message.title}\n\n${message.body}`;
     const escapedMessage = fullMessage.replace(/"/g, '\\"');
-    execSync(`git commit -m "${escapedMessage}"`);
+    execSync(`git commit -m "${escapedMessage}"`, { encoding: "utf8" });
   }
 }
 
@@ -432,67 +439,36 @@ interface LanguageSpecificInstructions {
 }
 
 const LANGUAGE_INSTRUCTIONS: LanguageSpecificInstructions = {
-  en: "Write the commit message in English",
-  ko: "Write both the title and body in Korean. Follow the same format but use Korean language.",
-  ja: "Write both the title and body in Japanese. Follow the same format but use Japanese language.",
+  en: "Format: {type}: {Generate the title in English} + empty line + {Generate the body in English}",
+  ko: "Format: {type}: {Generate the title in Korean} + empty line + {Generate the body in Korean}",
+  ja: "Format: {type}: {Generate the title in Japanese} + empty line + {Generate the body in Japanese}",
   "zh-CN":
-    "Write both the title and body in Simplified Chinese. Follow the same format but use Chinese language.",
+    "Format: {type}: {Generate the title in Simplified Chinese} + empty line + {Generate the body in Simplified Chinese}",
   "zh-TW":
-    "Write both the title and body in Traditional Chinese. Follow the same format but use Chinese language.",
+    "Format: {type}: {Generate the title in Traditional Chinese} + empty line + {Generate the body in Traditional Chinese}",
 };
 
 export const COMMIT_MESSAGE_TEMPLATE = (lang: string) => {
   const languageInstruction =
     LANGUAGE_INSTRUCTIONS[lang] || LANGUAGE_INSTRUCTIONS.en;
 
-  return `
-   When writing commit messages, please adhere to the following guidelines to ensure clear, consistent, and informative version control:
+  return `You are a commit message generator.
+Types: feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert
+Rules:
+- Title: <type>: <subject> (50 chars max)
+- One blank line after title
+- Body: bullet points with "-"
+- ${languageInstruction}
 
-    1. Subject Line:
-       - Start with one of these types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
-       - Use imperative mood (e.g., "Add new login feature")
-       - Limit to 50 characters or less
-       - Capitalize the first word
-       - Do not end with a period
-       - Separate from the body with a blank line
-    
-    2. Body Message:
-       - Provide additional context for the change
-       - Limit each line to 72 characters
-       - Explain the reason for the change (e.g., fixing a bug, improving performance)
-       - Use dashes (-) to separate multiple lines
-    
-    3. Commit Types and Their Usage:
-       - feat: Introduce a new feature
-       - fix: Correct a bug
-       - docs: Update or add documentation
-       - style: Make non-functional changes (e.g., formatting, whitespace)
-       - refactor: Restructure code without fixing bugs or adding features
-       - perf: Improve performance
-       - test: Add or correct tests
-       - build: Modify build tools or dependencies
-       - ci: Change CI configuration files or scripts
-       - chore: Make miscellaneous changes not affecting source or test files
-       - revert: Undo a previous commit
-    
-    4. Best Practices:
-       - Ensure the reviewer can understand the reason for the change
-       - Provide sufficient detail in the body, especially for complex issues
-       - Use clear and concise language throughout the message
-       - ${languageInstruction}
-
-    Remember, well-written commit messages are crucial for maintaining a clean and understandable version history. They help team members and future contributors quickly understand the purpose and impact of each change.  
-`;
+Generate commit messages for this diff. Messages only, no explanations.`;
 };
 
-export const COMMIT_MESSAGE_EXAMPLE = `   
-    feat: Implement user authentication
+export const COMMIT_MESSAGE_EXAMPLE = `
+feat: Add user authentication system\n
 
-    Added user authentication to enhance app security:
-     - Integrated login and signup functionality.
-     - Implemented JWT for session management.
-     - Updated the database schema to store hashed passwords.
-     - Added password recovery via email.
-`;
+- Implement secure login flow\n
+- Add JWT token management\n
+- Create password reset feature\n
+- Set up email verification\n`;
 ```
 

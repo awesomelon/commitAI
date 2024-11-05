@@ -72,9 +72,18 @@ describe("GitCommitMessageGenerator", () => {
 
   describe("API Interaction with Language", () => {
     test("includes language-specific instructions in API call", async () => {
-      const mockCreate = jest
-        .fn()
-        .mockResolvedValue({ content: [{ text: "API Response" }] });
+      const mockCreate = jest.fn().mockResolvedValue({
+        content: [
+          {
+            text: JSON.stringify([
+              {
+                title: "feat: 사용자 인증 추가",
+                body: "사용자 인증 기능 구현:\n- 로그인/로그아웃 기능\n- JWT 세션 관리",
+              },
+            ]),
+          },
+        ],
+      });
       (Anthropic as jest.MockedClass<typeof Anthropic>).mockImplementation(
         () => ({ messages: { create: mockCreate } }) as any,
       );
@@ -100,7 +109,7 @@ describe("GitCommitMessageGenerator", () => {
     test("uses English instructions for fallback cases", async () => {
       const mockCreate = jest
         .fn()
-        .mockResolvedValue({ content: [{ text: "API Response" }] });
+        .mockResolvedValue({ content: [{ text: JSON.stringify([]) }] });
       (Anthropic as jest.MockedClass<typeof Anthropic>).mockImplementation(
         () => ({ messages: { create: mockCreate } }) as any,
       );
@@ -126,9 +135,18 @@ describe("GitCommitMessageGenerator", () => {
 
   describe("Commit Message Generation", () => {
     test("callClaudeAPI includes language-specific template in the prompt", async () => {
-      const mockCreate = jest
-        .fn()
-        .mockResolvedValue({ content: [{ text: "API Response" }] });
+      const mockCreate = jest.fn().mockResolvedValue({
+        content: [
+          {
+            text: JSON.stringify([
+              {
+                title: "feat: 사용자 인증 추가",
+                body: "사용자 인증 기능 구현:\n- 로그인/로그아웃 기능\n- JWT 세션 관리",
+              },
+            ]),
+          },
+        ],
+      });
       (Anthropic as jest.MockedClass<typeof Anthropic>).mockImplementation(
         () => ({ messages: { create: mockCreate } }) as any,
       );
@@ -155,7 +173,16 @@ describe("GitCommitMessageGenerator", () => {
       const mockResponse = {
         content: [
           {
-            text: '1. "feat: 사용자 인증 추가"\n사용자 인증 기능 구현:\n- 로그인/로그아웃 기능\n- JWT 세션 관리',
+            text: JSON.stringify([
+              {
+                title: "feat: 사용자 인증 추가",
+                body: "사용자 인증 기능 구현:\n- 로그인/로그아웃 기능\n- JWT 세션 관리",
+              },
+              {
+                title: "docs: README 문서 개선",
+                body: "한국어 가이드 추가 및 포맷팅 개선",
+              },
+            ]),
           },
         ],
       };
@@ -174,6 +201,10 @@ describe("GitCommitMessageGenerator", () => {
         {
           title: "feat: 사용자 인증 추가",
           body: "사용자 인증 기능 구현:\n- 로그인/로그아웃 기능\n- JWT 세션 관리",
+        },
+        {
+          title: "docs: README 문서 개선",
+          body: "한국어 가이드 추가 및 포맷팅 개선",
         },
       ]);
     });
@@ -196,13 +227,16 @@ describe("GitCommitMessageGenerator", () => {
       const generator = new GitCommitMessageGenerator("fake-api-key", {
         language: "ko",
       });
-      const response = `1. feat: 사용자 인증 기능 추가
-JWT를 이용한 인증 시스템 구현:
-- 로그인/로그아웃 기능 추가
-- 토큰 기반 인증 구현
-
-2. docs: README 문서 개선
-한국어 가이드 추가 및 포맷팅 개선`;
+      const response = JSON.stringify([
+        {
+          title: "feat: 사용자 인증 기능 추가",
+          body: "JWT를 이용한 인증 시스템 구현:\n- 로그인/로그아웃 기능 추가\n- 토큰 기반 인증 구현",
+        },
+        {
+          title: "docs: README 문서 개선",
+          body: "한국어 가이드 추가 및 포맷팅 개선",
+        },
+      ]);
 
       const result = (generator as any).parseCommitMessages(response);
 
@@ -222,13 +256,16 @@ JWT를 이용한 인증 시스템 구현:
       const generator = new GitCommitMessageGenerator("fake-api-key", {
         language: "ja",
       });
-      const response = `1. feat: 認証機能を追加
-JWT認証システムの実装:
-- ログイン/ログアウト機能
-- トークンベース認証
-
-2. docs: READMEを改善
-日本語ガイドを追加、フォーマットを改善`;
+      const response = JSON.stringify([
+        {
+          title: "feat: 認証機能を追加",
+          body: "JWT認証システムの実装:\n- ログイン/ログアウト機能\n- トークンベース認証",
+        },
+        {
+          title: "docs: READMEを改善",
+          body: "日本語ガイドを追加、フォーマットを改善",
+        },
+      ]);
 
       const result = (generator as any).parseCommitMessages(response);
 
@@ -242,6 +279,57 @@ JWT認証システムの実装:
           body: "日本語ガイドを追加、フォーマットを改善",
         },
       ]);
+    });
+
+    test("handles empty array response", () => {
+      const generator = new GitCommitMessageGenerator("fake-api-key", {
+        language: "en",
+      });
+      const response = JSON.stringify([]);
+
+      const result = (generator as any).parseCommitMessages(response);
+
+      expect(result).toEqual([]);
+    });
+
+    test("handles invalid JSON response gracefully", () => {
+      const generator = new GitCommitMessageGenerator("fake-api-key", {
+        language: "en",
+      });
+      const invalidResponse = "Invalid JSON";
+
+      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+
+      const result = (generator as any).parseCommitMessages(invalidResponse);
+
+      expect(result).toEqual([]);
+      expect(consoleErrorSpy).toHaveBeenCalled();
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    test("handles non-array JSON response gracefully", () => {
+      const generator = new GitCommitMessageGenerator("fake-api-key", {
+        language: "en",
+      });
+      const invalidJsonResponse = JSON.stringify({
+        title: "Single Title",
+        body: "Single Body",
+      });
+
+      const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation();
+
+      const result = (generator as any).parseCommitMessages(
+        invalidJsonResponse,
+      );
+
+      expect(result).toEqual([]);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        "커밋 메시지 파싱 실패:",
+        expect.any(Error),
+      );
+
+      consoleErrorSpy.mockRestore();
     });
   });
 });
