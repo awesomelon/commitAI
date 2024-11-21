@@ -267,7 +267,7 @@ class GitCommitMessageGenerator {
 
   private getCurrentBranch(): string {
     try {
-      return execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
+      return execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' })?.trim() ?? '';
     } catch (error) {
       throw new Error(`Failed to get current branch: ${(error as Error).message}`);
     }
