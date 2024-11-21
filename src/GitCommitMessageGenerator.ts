@@ -128,13 +128,8 @@ class GitCommitMessageGenerator {
   }
 
   private buildPrompt(diff: string): string {
-    const currentBranch = this.getCurrentBranch();
-    const branchIdentifier = this.extractBranchIdentifier(currentBranch);
-    const prefix = branchIdentifier ? `${branchIdentifier} ` : '';
-
     let prompt = `You are a professional Git commit message writer. \n Write commit messages using the provided template and example. \n Template: ${COMMIT_MESSAGE_TEMPLATE}. \n Example: ${COMMIT_MESSAGE_EXAMPLE}. \n\n Generate ${this.options.numberOfSuggestions} commit messages for the following Git diff:`;
     prompt += `\n\n${diff} \n\n If there are no changes, you must return "No changes".`;
-    prompt += `\n\n Important: Always start the commit message title with "${prefix}" if provided.`;
     return prompt;
   }
 
@@ -164,7 +159,11 @@ class GitCommitMessageGenerator {
   }
 
   private createCommitMessage(lines: string[]): CommitMessage {
-    const title = lines[0];
+    const currentBranch = this.getCurrentBranch();
+    const branchIdentifier = this.extractBranchIdentifier(currentBranch);
+    const prefix = branchIdentifier ? `${branchIdentifier} ` : '';
+    
+    const title = prefix + lines[0];
     const body = lines.slice(1).join('\n').trim();
     return { title, body };
   }
