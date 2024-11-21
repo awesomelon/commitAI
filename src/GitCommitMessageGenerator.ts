@@ -61,6 +61,7 @@ class GitCommitMessageGenerator {
   async generateCommitMessages(): Promise<CommitMessage[]> {
     try {
       const diff = this.getGitDiff();
+      const branchPrefix = this.generateTitleFromBranch();
       const response = await this.callClaudeAPI(diff);
 
       const messages = this.parseCommitMessages(response.content[0].text);
@@ -72,7 +73,11 @@ class GitCommitMessageGenerator {
         return this.parseCommitMessages(retryResponse.content[0].text);
       }
 
-      return messages;
+      // 브랜치 이름 기반의 접두사 추가
+      return messages.map((msg) => ({
+        ...msg,
+        title: branchPrefix ? `${branchPrefix}${msg.title}` : msg.title,
+      }));
     } catch (error) {
       console.error(
         `커밋 메시지 생성 중 오류 발생: ${(error as Error).message}`,
@@ -80,6 +85,7 @@ class GitCommitMessageGenerator {
       throw error;
     }
   }
+
   private getGitDiff(): string {
     try {
       const stagedFiles = this.getStagedFiles();
@@ -257,6 +263,37 @@ class GitCommitMessageGenerator {
     const fullMessage = `${message.title}\n\n${message.body}`;
     const escapedMessage = fullMessage.replace(/"/g, '\\"');
     execSync(`git commit -m "${escapedMessage}"`, { encoding: "utf8" });
+  }
+
+  private getCurrentBranch(): string {
+    try {
+      return execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
+    } catch (error) {
+      throw new Error(`Failed to get current branch: ${(error as Error).message}`);
+    }
+  }
+
+  private parseBranchName(branchName: string): string | null {
+    // 브랜치명에서 마지막 부분 추출 (예: feature/project/AA-100 -> AA-100)
+    const parts = branchName.split('/');
+    const lastPart = parts[parts.length - 1];
+    
+    // AA-100 형식인지 확인
+    const match = lastPart.match(/^([A-Z]+-\d+)$/i);
+    if (!match) return null;
+    
+    return match[1]; // AA-100
+  }
+
+  private generateTitleFromBranch(): string {
+    const branchName = this.getCurrentBranch();
+    const ticketNumber = this.parseBranchName(branchName);
+    
+    if (!ticketNumber) {
+      return ''; // 브랜치 형식이 맞지 않으면 빈 문자열 반환
+    }
+
+    return `${ticketNumber} `;
   }
 }
 
