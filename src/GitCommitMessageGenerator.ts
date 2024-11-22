@@ -273,16 +273,12 @@ class GitCommitMessageGenerator {
     }
   }
 
-  private parseBranchName(branchName: string): string | null {
-    // 브랜치명에서 마지막 부분 추출 (예: feature/project/AA-100 -> AA-100)
-    const parts = branchName.split('/');
-    const lastPart = parts[parts.length - 1];
-    
-    // AA-100 형식인지 확인
-    const match = lastPart.match(/^([A-Z]+-\d+)$/i);
-    if (!match) return null;
-    
-    return match[1]; // AA-100
+  private parseBranchName(branchName: string): string | undefined {
+    // main, develop 제외
+    if (branchName === 'main' || branchName === 'develop') {
+      return '';
+    }
+    return branchName.split('/').pop();
   }
 
   private generateTitleFromBranch(): string {
