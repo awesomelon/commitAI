@@ -12,7 +12,7 @@ import {
 const VERSION = "__VERSION__";
 const config = new Configstore("commit-ai");
 
-async function saveConfig(options: { key?: string; language?: string }) {
+async function saveConfig(options: { key?: string; language?: string; provider?: string }) {
   let configChanged = false;
   let messages: string[] = [];
 
@@ -34,6 +34,16 @@ async function saveConfig(options: { key?: string; language?: string }) {
     }
   }
 
+  if (options.provider) {
+    if (options.provider !== "anthropic" && options.provider !== "openai") {
+      console.error(`Provider "${options.provider}" is not supported. Supported providers are: anthropic, openai`);
+    } else {
+      config.set("provider", options.provider);
+      messages.push(`Default provider set to: ${options.provider}`);
+      configChanged = true;
+    }
+  }
+
   if (configChanged) {
     console.log("\nConfiguration updated:");
     messages.forEach((msg) => console.log(`✓ ${msg}`));
@@ -43,6 +53,7 @@ async function saveConfig(options: { key?: string; language?: string }) {
     console.log("--------------------");
     console.log(`Default Language: ${getLanguage()}`);
     console.log(`API Key: ${config.get("apiKey") ? "Set" : "Not Set"}`);
+    console.log(`Default Provider: ${config.get("provider") || "Not Set"}`);
   }
 }
 
@@ -59,11 +70,17 @@ function getLanguage(): string {
   return config.get("language") || "en";
 }
 
+function getProvider(): string {
+  return config.get("provider") || "openai";
+}
+
 function showConfig() {
   const currentLang = getLanguage();
+  const currentProvider = getProvider();
   console.log("\nCurrent Configuration:");
   console.log("--------------------");
   console.log(`Default Language: ${currentLang}`);
+  console.log(`AI Provider: ${currentProvider}`);
   console.log(`API Key: ${config.get("apiKey") ? "Set" : "Not Set"}`);
   console.log("\nSupported Languages:");
   console.log("-------------------");
@@ -161,12 +178,14 @@ program
     "-l, --language <code>",
     "Set default language for commit messages (e.g., en, ko, ja)",
   )
+  .option("-p, --provider <provider>", "Set default AI provider (anthropic or openai)", "anthropic")
   .option("--show-config", "Show current configuration")
   .action(async (options) => {
-    if (options.key || options.language) {
+    if (options.key || options.language || options.provider) {
       await saveConfig({
         key: options.key,
         language: options.language,
+        provider: options.provider,
       });
       return;
     }
@@ -182,6 +201,7 @@ program
     const generator = new GitCommitMessageGenerator(apiKey, {
       numberOfSuggestions: parseInt(options.number),
       language: getLanguage(),
+      provider: getProvider() as "anthropic" | "openai",
     });
 
     try {

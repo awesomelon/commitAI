@@ -1,7 +1,7 @@
 import { execSync } from "child_process";
 import { Anthropic, ClientOptions } from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import {
-  COMMIT_MESSAGE_EXAMPLE,
   COMMIT_MESSAGE_TEMPLATE,
 } from "./commitMessageTemplate.js";
 
@@ -15,6 +15,7 @@ interface GeneratorOptions {
   numberOfSuggestions?: number;
   maxFileSizeKB?: number;
   language?: string;
+  provider?: "anthropic" | "openai";
 }
 
 interface CommitMessage {
@@ -23,14 +24,19 @@ interface CommitMessage {
 }
 
 class GitCommitMessageGenerator {
-  private anthropic: Anthropic;
+  private anthropic?: Anthropic;
+  private openai?: OpenAI;
   private options: Required<Omit<GeneratorOptions, "language">> & {
     language: SupportedLanguage;
   };
 
   constructor(apiKey: string, options: GeneratorOptions = {}) {
-    this.anthropic = new Anthropic({ apiKey } as ClientOptions);
     this.options = this.initializeOptions(options);
+    if (this.options.provider === "openai") {
+      this.openai = new OpenAI({ apiKey });
+    } else {
+      this.anthropic = new Anthropic({ apiKey } as ClientOptions);
+    }
   }
 
   private validateLanguage(lang: string): SupportedLanguage {
@@ -55,6 +61,7 @@ class GitCommitMessageGenerator {
       numberOfSuggestions: options.numberOfSuggestions || 3,
       maxFileSizeKB: options.maxFileSizeKB || 100,
       language: this.validateLanguage(options.language || "en"),
+      provider: options.provider || 'openai',
     };
   }
 
@@ -148,15 +155,25 @@ class GitCommitMessageGenerator {
   private async callClaudeAPI(diff: string): Promise<any> {
     try {
       const prompt = this.buildPrompt(diff);
-
-      return await this.anthropic.messages.create({
-        model: this.options.model,
-        max_tokens: this.options.maxTokens,
-        temperature: this.options.temperature,
-        messages: [{ role: "user", content: prompt }],
-      });
+      if (this.options.provider === "openai") {
+        const response = await this.openai!.chat.completions.create({
+          model: this.options.model,
+          max_tokens: this.options.maxTokens,
+          temperature: this.options.temperature,
+          messages: [{ role: "user", content: prompt }],
+        });
+        // OpenAI의 응답 구조를 Anthropic 형식과 유사하게 정규화
+        return { content: [{ text: response.choices[0].message?.content || "" }] };
+      } else {
+        return await this.anthropic!.messages.create({
+          model: this.options.model,
+          max_tokens: this.options.maxTokens,
+          temperature: this.options.temperature,
+          messages: [{ role: "user", content: prompt }],
+        });
+      }
     } catch (error) {
-      throw new Error(`Failed to call Claude API: ${(error as Error).message}`);
+      throw new Error(`Failed to call AI API: ${(error as Error).message}`);
     }
   }
 

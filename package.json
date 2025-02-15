@@ -42,9 +42,9 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.0",
     "@inquirer/prompts": "^5.3.8",
-    "@j-ho/commit-ai": "link:",
     "commander": "^12.1.0",
     "configstore": "^7.0.0",
+    "openai": "^4.85.1",
     "ora": "^8.1.0"
   },
   "engines": {
