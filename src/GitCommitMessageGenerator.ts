@@ -30,8 +30,9 @@ class GitCommitMessageGenerator {
     language: SupportedLanguage;
   };
 
-  constructor(apiKey: string, options: GeneratorOptions = {}) {
+  constructor(apiKey: string, options: GeneratorOptions = {}) {    
     this.options = this.initializeOptions(options);
+    
     if (this.options.provider === "openai") {
       this.openai = new OpenAI({ apiKey });
     } else {
@@ -57,7 +58,7 @@ class GitCommitMessageGenerator {
     return {
       maxTokens: options.maxTokens || 500,
       temperature: options.temperature || 0,
-      model: options.model || "claude-3-5-sonnet-20241022",
+      model: options.model ||  (options.provider === 'openai' ? 'gpt-4o' : "claude-3-5-sonnet-20241022"),
       numberOfSuggestions: options.numberOfSuggestions || 3,
       maxFileSizeKB: options.maxFileSizeKB || 100,
       language: this.validateLanguage(options.language || "en"),

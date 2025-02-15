@@ -37,7 +37,7 @@ async function saveConfig(options: { key?: string; language?: string; provider?:
   if (options.provider) {
     if (options.provider !== "anthropic" && options.provider !== "openai") {
       console.error(`Provider "${options.provider}" is not supported. Supported providers are: anthropic, openai`);
-    } else {
+    } else {            
       config.set("provider", options.provider);
       messages.push(`Default provider set to: ${options.provider}`);
       configChanged = true;
@@ -45,9 +45,9 @@ async function saveConfig(options: { key?: string; language?: string; provider?:
   }
 
   if (configChanged) {
+
     console.log("\nConfiguration updated:");
     messages.forEach((msg) => console.log(`✓ ${msg}`));
-
     // Show current config after update
     console.log("\nCurrent Configuration:");
     console.log("--------------------");
@@ -76,7 +76,7 @@ function getProvider(): string {
 
 function showConfig() {
   const currentLang = getLanguage();
-  const currentProvider = getProvider();
+  const currentProvider = getProvider();  
   console.log("\nCurrent Configuration:");
   console.log("--------------------");
   console.log(`Default Language: ${currentLang}`);
@@ -172,16 +172,16 @@ async function commitChanges(
 program
   .version(VERSION)
   .description("Automatically generate commit messages using AI")
-  .option("-k, --key <key>", "Set Anthropic API key")
+  .option("-k, --key <key>", "Set API key")
   .option("-n, --number <number>", "Number of commit message suggestions", "3")
   .option(
     "-l, --language <code>",
     "Set default language for commit messages (e.g., en, ko, ja)",
   )
-  .option("-p, --provider <provider>", "Set default AI provider (anthropic or openai)", "anthropic")
+  .option("-p, --provider <provider>", "Set default AI provider (anthropic or openai)")
   .option("--show-config", "Show current configuration")
-  .action(async (options) => {
-    if (options.key || options.language || options.provider) {
+  .action(async (options) => {  
+    if (options.key || options.language || options.provider) {      
       await saveConfig({
         key: options.key,
         language: options.language,
